@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en" class=""><head><script>window.livecodes = window.livecodes || {};</script><title>Admin earning app ver2.0</title><meta name="title" content="Admin earning app ver2.0"><meta name="description" content="Admin panel "><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="./style.css"><script src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js" async=""></script><script type="importmap">{
+  "imports": {}
+}</script></head><body>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navrose Admin Panel</title>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #002f34;
+            --secondary-color: #4caf50;
+            --background-color: #f0f2f5;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --text-color-light: #6c757d;
+            --border-color: #dee2e6;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        #root {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        /* --- NOTIFICATION BELL STYLES --- */
+        .notification-area {
+            position: relative;
+        }
+        .notification-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            padding: 0.5rem;
+        }
+        .notification-btn svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .notification-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background-color: var(--card-background);
+            color: var(--text-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            width: 280px;
+            overflow: hidden;
+            z-index: 1100;
+            border: 1px solid var(--border-color);
+        }
+        .notification-dropdown-header {
+            padding: 1rem;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .notification-dropdown-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+        .notification-dropdown-item:last-child {
+            border-bottom: none;
+        }
+        .notification-dropdown-item:hover {
+            background-color: var(--background-color);
+        }
+
+
+        .main-content {
+            padding: 2rem;
+            flex-grow: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .form-container {
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            max-width: 700px;
+            margin: 2rem auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-actions {
+            text-align: center;
+        }
+
+        .form-actions button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+        .form-actions button:disabled {
+            background-color: var(--text-color-light);
+            cursor: not-allowed;
+        }
+
+        .dashboard-container h2 {
+            color: var(--primary-color);
+        }
+
+        .ads-list { list-style: none; padding: 0; }
+        .ads-list-item {
+            background: var(--card-background);
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--box-shadow);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .ads-list-item > img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; }
+        .ad-info { flex-grow: 1; }
+        .ad-info h4 { margin: 0 0 0.25rem; }
+        .ad-info p { margin: 0; font-size: 0.9rem; color: var(--text-color-light); }
+        .order-items-list { list-style-type: none; padding-left: 1rem; margin: 0.5rem 0; font-size: 0.9rem; }
+        .ad-status { padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; color: white; text-transform: capitalize; }
+        .status-approved, .status-active { background-color: var(--secondary-color); }
+        .status-pending { background-color: var(--warning-color); color: var(--text-color); }
+        .status-rejected, .status-cancelled { background-color: var(--danger-color); }
+        .status-sold, .status-expired { background-color: var(--text-color-light); }
+        .status-confirmed, .status-preparing, .status-delivered, .status-shipped { background-color: var(--info-color); }
+        .status-out-for-delivery { background-color: #fd7e14; }
+        .ad-actions button, .ad-actions a { margin-left: 0.5rem; padding: 0.5rem 1rem; border: none; border-radius: var(--border-radius); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;}
+        .btn-approve { background-color: var(--secondary-color); color: white; }
+        .btn-reject { background-color: var(--danger-color); color: white; }
+        .btn-update, .btn-edit { background-color: var(--info-color); color: white; }
+        .btn-delete { background-color: var(--danger-color); color: white; }
+        .btn-whatsapp { background-color: #25D366; color: white; }
+        
+        .admin-global-search { width: 100%; padding: 0.75rem; font-size: 1rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); margin-bottom: 1.5rem; box-sizing: border-box; }
+        .dashboard-page h2 { text-align: center; margin-bottom: 2rem; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1.5rem; }
+        .dashboard-icon-card { background-color: var(--card-background); border-radius: var(--border-radius); padding: 1.5rem 1rem; text-align: center; cursor: pointer; box-shadow: var(--box-shadow); position: relative; transition: transform 0.2s, box-shadow 0.2s; }
+        .dashboard-icon-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        .item-count-badge { position: absolute; top: 8px; right: 8px; background-color: var(--danger-color); color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .icon-wrapper { width: 60px; height: 60px; background-color: var(--background-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; margin-left: auto; margin-right: auto;}
+        .dashboard-icon-card svg { width: 32px; height: 32px; fill: var(--primary-color); }
+        .dashboard-icon-card p { margin: 0; font-weight: 600; font-size: 0.9rem; }
+        
+        .order-details { flex-grow: 1; }
+        .order-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+        .order-status-select { padding: 0.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1500; }
+        .modal-content { background: var(--card-background); padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 450px; position: relative; }
+        .modal-close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--text-color-light); }
+        .image-modal-content { padding: 1rem; max-width: 90vw; max-height: 90vh; }
+        .image-modal-content img { max-width: 100%; max-height: 80vh; border-radius: var(--border-radius); }
+        .modal-actions { display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
+        .modal-actions button, .btn-cancel { padding: 0.75rem 1.5rem; border: none; border-radius: var(--border-radius); cursor: pointer; }
+        .btn-confirm { background-color: var(--secondary-color); color: white; }
+        .btn-cancel { background-color: var(--text-color-light); color: white; }
+        
+        .notification { position: fixed; top: 20px; right: 20px; padding: 1rem 1.5rem; border-radius: var(--border-radius); color: white; z-index: 2000; opacity: 0; transform: translateY(-20px); transition: opacity 0.3s ease, transform 0.3s ease; visibility: hidden; }
+        .notification.show { opacity: 1; transform: translateY(0); visibility: visible; }
+        .notification.success { background-color: var(--secondary-color); }
+        .notification.error { background-color: var(--danger-color); }
+        
+        .ledger-table { width: 100%; border-collapse: collapse; background-color: var(--card-background); box-shadow: var(--box-shadow); border-radius: var(--border-radius); overflow: hidden; }
+        .ledger-table th, .ledger-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .ledger-table th { background-color: #f8f9fa; cursor: pointer; user-select: none; }
+        .ledger-table th:hover { background-color: #e9ecef; }
+        
+        .loading-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .spinner { border: 5px solid rgba(0, 47, 52, 0.1); width: 50px; height: 50px; border-radius: 50%; border-left-color: var(--primary-color); animation: spin 1s ease infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+
+
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="react">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- FIREBASE SETUP ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBujn2I22eC_t2sUA-ViStOmVL1nMZ3Lxo",
+          authDomain: "navrose-earning.firebaseapp.com",
+          projectId: "navrose-earning",
+          storageBucket: "navrose-earning.firebasestorage.app",
+          messagingSenderId: "864112302885",
+          appId: "1:864112302885:web:267c420e9ee34d7f4718cc"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+        
+        // --- HELPERS ---
+        const compressImageToBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onerror = reject;
+            reader.onload = (event) => {
+                if (event.target && typeof event.target.result === 'string') {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onerror = reject;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const maxWidth = 800;
+                        const scaleSize = maxWidth / img.width;
+                        canvas.width = maxWidth;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        } else {
+                            reject(new Error('Could not get canvas context.'));
+                        }
+                    };
+                } else {
+                    reject(new Error('FileReader result is not a string.'));
+                }
+            };
+        });
+
+        const Notification = ({ message, type, show, onHide }) => {
+            useEffect(() => {
+                if (show) {
+                    const timer = setTimeout(() => onHide(), 5000);
+                    return () => clearTimeout(timer);
+                }
+            }, [show, onHide]);
+            return <div className={`notification ${type} ${show ? 'show' : ''}`}>{message}</div>;
+        };
+
+        const ConfirmModal = ({ show, message, onConfirm, onCancel }) => {
+            if (!show) return null;
+            return (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <p>{message}</p>
+                        <div className="modal-actions">
+                            <button onClick={onCancel} className="btn-cancel">Cancel</button>
+                            <button onClick={() => { onConfirm(); onCancel(); }} className="btn-confirm">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const ImageModal = ({ src, onClose }) => {
+            if (!src) return null;
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal-content image-modal-content" onClick={e => e.stopPropagation()}>
+                        <button className="modal-close-btn" onClick={onClose}>&times;</button>
+                        <img src={src} alt="Payment Proof" />
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- MAIN ADMIN APP ---
+        const AdminApp = () => {
+            const [adminView, setAdminView] = useState('dashboard');
+            const [ads, setAds] = useState([]);
+            const [users, setUsers] = useState([]);
+            const [kitchenItems, setKitchenItems] = useState([]);
+            const [kitchenOrders, setKitchenOrders] = useState([]);
+            const [freelanceProfiles, setFreelanceProfiles] = useState([]);
+            const [boosterOffers, setBoosterOffers] = useState([]);
+            const [loginActivities, setLoginActivities] = useState([]);
+            const [paymentSettings, setPaymentSettings] = useState(null);
+
+            const [loading, setLoading] = useState(true);
+            const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+            const [confirmModal, setConfirmModal] = useState({ show: false, message: '', onConfirm: () => {} });
+            const [paymentProofUrl, setPaymentProofUrl] = useState(null);
+            const [showNotifications, setShowNotifications] = useState(false);
+            const notificationRef = useRef(null);
+            
+            const showNotification = (message, type = 'info') => setNotification({ show: true, message, type });
+            const hideNotification = () => setNotification(prev => ({ ...prev, show: false }));
+            const showConfirm = (message, onConfirm) => setConfirmModal({ show: true, message, onConfirm });
+            const hideConfirm = () => setConfirmModal({ show: false, message: '', onConfirm: () => {} });
+
+            useEffect(() => {
+                const collections = {
+                    'ads': setAds, 'users': setUsers, 'kitchenItems': setKitchenItems,
+                    'kitchenOrders': setKitchenOrders, 'freelanceProfiles': setFreelanceProfiles,
+                    'boosterOffers': setBoosterOffers, 'login_activity': setLoginActivities
+                };
+                
+                const unsubscribers = Object.entries(collections).map(([name, setter]) => {
+                    let query = db.collection(name);
+                    if (name !== 'users') { 
+                        const timestampField = (name === 'login_activity') ? 'loginAt' : 'createdAt';
+                        query = query.orderBy(timestampField, 'desc');
+                    }
+                    if (['ads', 'kitchenOrders', 'login_activity'].includes(name)) query = query.limit(50);
+                    return query.onSnapshot(
+                        snap => setter(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+                        err => console.error(`Error fetching ${name}:`, err)
+                    );
+                });
+
+                const unsubSettings = db.collection('settings').doc('payment').onSnapshot(doc => {
+                    setPaymentSettings(doc.exists ? { id: doc.id, ...doc.data() } : { upiId: '', qrCodeBase64: '' });
+                }, err => console.error("Error fetching payment settings:", err));
+                
+                setTimeout(() => setLoading(false), 2500);
+                
+                const handleClickOutside = (event) => {
+                    if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+                        setShowNotifications(false);
+                    }
+                };
+                document.addEventListener("mousedown", handleClickOutside);
+
+                return () => {
+                    unsubscribers.forEach(unsub => unsub());
+                    unsubSettings();
+                    document.removeEventListener("mousedown", handleClickOutside);
+                };
+            }, []);
+            
+            const pendingAds = useMemo(() => ads.filter(ad => ad.status === 'pending'), [ads]);
+            const pendingFreelancers = useMemo(() => freelanceProfiles.filter(p => p.status === 'pending'), [freelanceProfiles]);
+            const pendingKitchenOrders = useMemo(() => kitchenOrders.filter(o => o.status === 'pending'), [kitchenOrders]);
+            const totalPendingCount = pendingAds.length + pendingFreelancers.length + pendingKitchenOrders.length;
+
+
+            // --- CUD (Create, Update, Delete) Handlers ---
+            const createOrUpdateDoc = async (collection, docId, data, successMsg, errorMsg) => {
+                try {
+                    if (docId) {
+                        await db.collection(collection).doc(docId).set(data, { merge: true });
+                    } else {
+                        await db.collection(collection).add(data);
+                    }
+                    showNotification(successMsg, 'success');
+                } catch (error) {
+                    console.error(errorMsg, error);
+                    showNotification(errorMsg, 'error');
+                }
+            };
+            
+            const deleteDoc = (collection, docId, successMsg, errorMsg) => {
+                showConfirm(`Are you sure you want to permanently delete this item?`, async () => {
+                    try {
+                        await db.collection(collection).doc(docId).delete();
+                        showNotification(successMsg, 'success');
+                    } catch (error) { showNotification(errorMsg, 'error'); }
+                });
+            };
+
+            const handleUpdateStatus = async (collection, docId, status, relatedDoc = {}) => {
+                try {
+                    await db.collection(collection).doc(docId).update({ status });
+                    showNotification(`Status updated to ${status}.`, 'success');
+
+                    const userId = relatedDoc.user;
+                    if (userId) {
+                        let message = '';
+                        let link = '';
+                        let shouldNotify = false;
+
+                        if (collection === 'freelanceProfiles' && status === 'active') {
+                            message = 'Congratulations! Your freelance profile has been approved.';
+                            link = 'myFreelanceProfile';
+                            shouldNotify = true;
+                        } else if (collection === 'kitchenOrders') {
+                            const orderId = docId.substring(0, 8).toUpperCase();
+                            const statusMessages = {
+                                confirmed: `Your order #${orderId} has been confirmed.`,
+                                preparing: `Your order #${orderId} is being prepared.`,
+                                'out-for-delivery': `Your order #${orderId} is out for delivery.`,
+                                delivered: `Your order #${orderId} has been delivered. We hope you enjoy!`,
+                                cancelled: `Unfortunately, your order #${orderId} has been cancelled.`
+                            };
+                            if (statusMessages[status]) {
+                                message = statusMessages[status];
+                                link = 'myOrders';
+                                shouldNotify = true;
+                            }
+                        }
+                        
+                        if (shouldNotify) {
+                            await db.collection('notifications').add({
+                                userId, message, link, read: false,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Failed to update status or send notification for ${collection}/${docId}:`, error);
+                    showNotification('Operation failed. Please check console for details.', 'error');
+                }
+            };
+
+            const handleNavFromNotification = (view) => {
+                setAdminView(view);
+                setShowNotifications(false);
+            };
+
+            if (loading) return <div className="loading-container"><div className="spinner"></div></div>;
+
+            return (
+                <div className="app-container">
+                    <Notification show={notification.show} message={notification.message} type={notification.type} onHide={hideNotification} />
+                    <ConfirmModal show={confirmModal.show} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={hideConfirm} />
+                    <ImageModal src={paymentProofUrl} onClose={() => setPaymentProofUrl(null)} />
+                    
+                    <header className="header">
+                        <h1>Navrose Admin</h1>
+                        <div className="notification-area" ref={notificationRef}>
+                            <button className="notification-btn" onClick={() => setShowNotifications(!showNotifications)}>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path></svg>
+                                {totalPendingCount > 0 && <span className="notification-badge">{totalPendingCount}</span>}
+                            </button>
+                            {showNotifications && (
+                                <div className="notification-dropdown">
+                                    <div className="notification-dropdown-header">Pending Items</div>
+                                    {pendingAds.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('ads')}><span>Pending Ads</span> <strong>{pendingAds.length}</strong></div>}
+                                    {pendingFreelancers.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('freelance')}><span>Pending Freelancers</span> <strong>{pendingFreelancers.length}</strong></div>}
+                                    {pendingKitchenOrders.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('kitchenOrders')}><span>Pending Orders</span> <strong>{pendingKitchenOrders.length}</strong></div>}
+                                    {totalPendingCount === 0 && <div className="notification-dropdown-item"><span>No pending items</span></div>}
+                                </div>
+                            )}
+                        </div>
+                    </header>
+
+                    <main className="main-content">
+                        <AdminPanel 
+                            adminView={adminView}
+                            setAdminView={setAdminView}
+                            data={{ ads, users, kitchenItems, kitchenOrders, freelanceProfiles, boosterOffers, loginActivities, paymentSettings }}
+                            handlers={{ handleUpdateStatus, deleteDoc, createOrUpdateDoc, onShowProof: setPaymentProofUrl }}
+                            pendingCounts={{ ads: pendingAds.length, freelancers: pendingFreelancers.length, orders: pendingKitchenOrders.length }}
+                        />
+                    </main>
+                </div>
+            );
+        };
+        
+        const LedgerView = ({ orders }) => {
+            const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'descending' });
+
+            const sortedOrders = useMemo(() => {
+                let sortableItems = [...orders];
+                if (sortConfig !== null) {
+                    sortableItems.sort((a, b) => {
+                        let aValue = a[sortConfig.key]; let bValue = b[sortConfig.key];
+                        if (sortConfig.key === 'createdAt' && a.createdAt && b.createdAt) {
+                            aValue = a.createdAt.toMillis(); bValue = b.createdAt.toMillis();
+                        }
+                        if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+                        if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+                        return 0;
+                    });
+                }
+                return sortableItems;
+            }, [orders, sortConfig]);
+
+            const requestSort = (key) => {
+                let direction = 'ascending';
+                if (sortConfig.key === key && sortConfig.direction === 'ascending') direction = 'descending';
+                setSortConfig({ key, direction });
+            };
+
+            return (
+                <div>
+                    <h3>Payment Ledger (Kitchen Orders)</h3>
+                    <table className="ledger-table">
+                        <thead>
+                            <tr>
+                                <th onClick={() => requestSort('createdAt')}>Date</th>
+                                <th onClick={() => requestSort('userName')}>User</th>
+                                <th onClick={() => requestSort('user')}>Contact</th>
+                                <th onClick={() => requestSort('total')}>Amount (₹)</th>
+                                <th onClick={() => requestSort('status')}>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sortedOrders.map(order => (
+                                <tr key={order.id}>
+                                    <td>{order.createdAt && order.createdAt.toDate().toLocaleDateString()}</td>
+                                    <td>{order.userName}</td>
+                                    <td>{order.user}</td>
+                                    <td>{(order.total || 0).toFixed(2)}</td>
+                                    <td><span className={`ad-status status-${order.status}`}>{order.status}</span></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        };
+        
+        const PaymentSettingsView = ({ currentSettings, onSave }) => {
+            const [upiId, setUpiId] = useState('');
+            const [qrCode, setQrCode] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            useEffect(() => {
+                if (currentSettings) {
+                    setUpiId(currentSettings.upiId || '');
+                    setQrCode(currentSettings.qrCodeBase64 || null);
+                }
+            }, [currentSettings]);
+
+            const handleFileChange = async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const base64 = await compressImageToBase64(e.target.files[0]);
+                    setQrCode(base64);
+                }
+            };
+
+            const handleSave = async (e) => {
+                e.preventDefault(); setLoading(true);
+                await onSave('settings', 'payment', { upiId, qrCodeBase64: qrCode }, 'Payment settings saved!', 'Failed to save settings.');
+                setLoading(false);
+            };
+
+            if (!currentSettings) return <p>Loading payment settings...</p>;
+
+            return (
+                <div className="form-container">
+                    <h2>Payment Settings</h2>
+                    <form onSubmit={handleSave}>
+                        <div className="form-group">
+                            <label>UPI ID</label>
+                            <input type="text" value={upiId} onChange={e => setUpiId(e.target.value)} required />
+                        </div>
+                        <div className="form-group">
+                            <label>QR Code Image</label>
+                            <input type="file" accept="image/*" onChange={handleFileChange} />
+                            {qrCode && <img src={qrCode} alt="QR Code Preview" className="image-preview" />}
+                        </div>
+                        <div className="form-actions">
+                            <button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save Settings'}</button>
+                        </div>
+                    </form>
+                </div>
+            );
+        };
+        
+        const KitchenMenuView = ({ items, handlers }) => {
+            const [name, setName] = useState('');
+            const [price, setPrice] = useState('');
+            const [imageBase64, setImageBase64] = useState(null);
+            const [isAvailable, setIsAvailable] = useState(true);
+            const [loading, setLoading] = useState(false);
+            
+            const { createOrUpdateDoc, deleteDoc } = handlers;
+
+            const handleFileChange = async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const base64 = await compressImageToBase64(e.target.files[0]);
+                    setImageBase64(base64);
+                }
+            };
+            
+            const resetForm = () => {
+                setName('');
+                setPrice('');
+                setImageBase64(null);
+                setIsAvailable(true);
+                const fileInput = document.getElementById('kitchen-item-image-input');
+                if (fileInput) fileInput.value = '';
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!name || !price || !imageBase64) {
+                    alert('Please fill all fields and upload an image.');
+                    return;
+                }
+                setLoading(true);
+                const data = {
+                    name,
+                    title: name,
+                    price: Number(price),
+                    imageBase64,
+                    isAvailable,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await createOrUpdateDoc('kitchenItems', null, data, 'Kitchen item added!', 'Failed to add item.');
+                setLoading(false);
+                resetForm();
+            };
+            
+            const handleToggleAvailability = (item) => {
+                createOrUpdateDoc('kitchenItems', item.id, { isAvailable: !item.isAvailable }, 'Availability updated!', 'Failed to update availability.');
+            };
+
+            return (
+                <div>
+                    <h3>Manage Kitchen Menu</h3>
+                    <div className="form-container">
+                        <h4>Add New Item</h4>
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label>Item Name</label>
+                                <input type="text" value={name} onChange={e => setName(e.target.value)} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Price (₹)</label>
+                                <input type="number" value={price} onChange={e => setPrice(e.target.value)} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Image</label>
+                                <input type="file" id="kitchen-item-image-input" accept="image/*" onChange={handleFileChange} required />
+                                {imageBase64 && <img src={imageBase64} alt="Preview" className="image-preview" />}
+                            </div>
+                            <div className="form-group">
+                                <label style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                                    <input type="checkbox" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} />
+                                    Available for ordering
+                                </label>
+                            </div>
+                            <button type="submit" className="btn-approve" disabled={loading}>{loading ? 'Saving...' : 'Add Item'}</button>
+                        </form>
+                    </div>
+
+                    <h4>Existing Items</h4>
+                    {items.length > 0 ? (
+                        <ul className="ads-list">
+                            {items.map(item => (
+                                <li key={item.id} className="ads-list-item">
+                                    <img src={item.imageBase64 || 'https://via.placeholder.com/80'} alt={item.name} />
+                                    <div className="ad-info">
+                                        <h4>{item.name}</h4>
+                                        <p>Price: ₹{item.price} | Status: {item.isAvailable ? 'Available' : 'Unavailable'}</p>
+                                    </div>
+                                    <div className="ad-actions">
+                                        <button className={item.isAvailable ? 'btn-reject' : 'btn-approve'} onClick={() => handleToggleAvailability(item)}>
+                                            {item.isAvailable ? 'Make Unavailable' : 'Make Available'}
+                                        </button>
+                                        <button className="btn-delete" onClick={() => deleteDoc('kitchenItems', item.id, 'Item deleted.', 'Failed to delete item.')}>Delete</button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>No kitchen menu items have been added yet.</p>
+                    )}
+                </div>
+            );
+        };
+        
+        const BoosterOffersView = ({ offers, handlers }) => {
+            const [title, setTitle] = useState('');
+            const [description, setDescription] = useState('');
+            const [imageBase64, setImageBase64] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const { createOrUpdateDoc, deleteDoc } = handlers;
+
+            const handleFileChange = async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const base64 = await compressImageToBase64(e.target.files[0]);
+                    setImageBase64(base64);
+                }
+            };
+            
+            const resetForm = () => {
+                setTitle('');
+                setDescription('');
+                setImageBase64(null);
+                const fileInput = document.getElementById('booster-image-input');
+                if(fileInput) fileInput.value = '';
+            };
+
+            const handleCreateBooster = async (e) => {
+                e.preventDefault();
+                if (!title || !description || !imageBase64) {
+                    alert('Please fill all fields and upload an image.');
+                    return;
+                }
+                setLoading(true);
+                const data = {
+                    title,
+                    description,
+                    imageBase64,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await createOrUpdateDoc('boosterOffers', null, data, 'Booster offer created!', 'Failed to create offer.');
+                setLoading(false);
+                resetForm();
+            };
+
+            return (
+                <div>
+                    <h3>Booster Offers (Flash Offers)</h3>
+                    <form className="form-container" onSubmit={handleCreateBooster}>
+                        <h4>Create New Offer</h4>
+                        <div className="form-group">
+                            <label>Title</label>
+                            <input type="text" value={title} onChange={e => setTitle(e.target.value)} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Description</label>
+                            <textarea value={description} onChange={e => setDescription(e.target.value)} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Offer Image</label>
+                            <input id="booster-image-input" type="file" accept="image/*" onChange={handleFileChange} required />
+                            {imageBase64 && <img src={imageBase64} alt="Offer Preview" className="image-preview" />}
+                        </div>
+                        <button className="btn-approve" type="submit" disabled={loading}>
+                            {loading ? 'Creating...' : 'Create Offer'}
+                        </button>
+                    </form>
+                    
+                    <h4>Existing Offers</h4>
+                    {Array.isArray(offers) && offers.length > 0 ? (
+                        <ul className="ads-list">
+                            {offers.map(offer => (
+                                <li key={offer.id} className="ads-list-item">
+                                    <img src={offer.imageBase64 || 'https://via.placeholder.com/80'} alt={offer.title} />
+                                    <div className="ad-info">
+                                        <h4>{offer.title}</h4>
+                                        <p>{offer.description}</p>
+                                    </div>
+                                    <div className="ad-actions">
+                                        <button className="btn-delete" onClick={() => deleteDoc('boosterOffers', offer.id, 'Offer deleted.', 'Failed to delete offer.')}>Delete</button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>No booster offers have been created yet.</p>
+                    )}
+                </div>
+            );
+        };
+
+        const AdminPanel = ({ adminView, setAdminView, data, handlers, pendingCounts }) => {
+            const { ads, users, kitchenItems, kitchenOrders, freelanceProfiles, boosterOffers, loginActivities, paymentSettings } = data;
+            const { handleUpdateStatus, deleteDoc, createOrUpdateDoc, onShowProof } = handlers;
+
+            const adminServices = [
+                { name: 'Pending Ads', view: 'ads', count: pendingCounts.ads, icon: <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"></path></svg> },
+                { name: 'Pending Freelancers', view: 'freelance', count: pendingCounts.freelancers, icon: <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg> },
+                { name: 'Kitchen Orders', view: 'kitchenOrders', count: pendingCounts.orders, icon: <svg viewBox="0 0 24 24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"></path></svg> },
+                { name: 'Ghar Ki Kitchen', view: 'kitchenMenu', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M16 6v8h3v8h2V2c-2.76 0-5 2.24-5 4zm-5 3H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7z"></path></svg> },
+                { name: 'Booster Offers', view: 'boosterOffers', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"></path></svg> },
+                { name: 'Payment Ledger', view: 'ledger', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v14.5c0 1.38 1.12 2.5 2.5 2.5h13c1.38 0 2.5-1.12 2.5-2.5V2l-1.5 1.5zM19 18H7V5h12v13z M9 7h8v2H9z m0 4h8v2H9z m0 4h5v2H9z"></path></svg> },
+                { name: 'Payment Settings', view: 'paymentSettings', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"></path></svg> },
+                { name: 'User Management', view: 'users', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"></path></svg> },
+                { name: 'Login Activity', view: 'loginActivity', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"></path></svg> },
+            ];
+            
+            const getWhatsAppMessage = (order) => {
+                if (!order) return '';
+                try {
+                    const orderId = (order.id || 'N/A').substring(0, 8).toUpperCase();
+                    const userName = order.userName || 'Customer';
+                    const total = (order.total || 0).toFixed(2);
+                    const status = order.status || 'pending';
+                    let message;
+
+                    switch (status) {
+                        case 'pending':
+                            message = `Hi ${userName}, we've received your Navrose order #${orderId} and are verifying your payment. We will confirm it shortly. Thank you!`;
+                            break;
+                        case 'confirmed':
+                            message = `Hi ${userName}, your Navrose order #${orderId} for ₹${total} has been confirmed and is now being prepared.`;
+                            break;
+                        case 'preparing':
+                            message = `Hi ${userName}, your order #${orderId} is being prepared with care in our kitchen.`;
+                            break;
+                        case 'out-for-delivery':
+                            message = `Hi ${userName}, great news! Your Navrose order #${orderId} is out for delivery.`;
+                            break;
+                        case 'delivered':
+                            message = `Hi ${userName}, we hope you're enjoying your meal from order #${orderId}. Thank you for choosing Navrose!`;
+                            break;
+                        case 'cancelled':
+                            message = `Hi ${userName}, regarding your order #${orderId}. We're sorry, but it has been cancelled. Please contact us for details.`;
+                            break;
+                        default:
+                            message = `Hi ${userName}, regarding your Navrose order #${orderId}.`;
+                            break;
+                    }
+                    return encodeURIComponent(message);
+                } catch (error) {
+                    console.error("Error generating WhatsApp message for order:", order.id, error);
+                    return encodeURIComponent(`Hi ${order.userName || 'Customer'}, regarding your Navrose order.`);
+                }
+            };
+
+            const renderContent = () => {
+                 switch (adminView) {
+                    case 'ads': {
+                        const pendingAds = ads.filter(ad => ad.status === 'pending');
+                        return (
+                            <div>
+                                <h3>Ads Awaiting Approval</h3>
+                                <ul className="ads-list">
+                                    {pendingAds.map(ad => (
+                                        <li key={ad.id} className="ads-list-item">
+                                            <img src={ad.imageBase64 || 'https://via.placeholder.com/80'} alt={ad.title} />
+                                            <div className="ad-info"><h4>{ad.title}</h4><p>User: {ad.user} | Price: ₹{ad.price}</p></div>
+                                            <div className="ad-actions">
+                                                <button className="btn-approve" onClick={() => handleUpdateStatus('ads', ad.id, 'approved', ad)}>Approve</button>
+                                                <button className="btn-reject" onClick={() => handleUpdateStatus('ads', ad.id, 'rejected', ad)}>Reject</button>
+                                                <button className="btn-delete" onClick={() => deleteDoc('ads', ad.id, 'Ad deleted.', 'Failed to delete ad.')}>Delete</button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        );
+                    }
+                    case 'freelance': {
+                        const pendingFreelancers = freelanceProfiles.filter(p => p.status === 'pending');
+                        return (
+                            <div>
+                                <h3>Freelancers Awaiting Approval</h3>
+                                <ul className="ads-list">
+                                    {pendingFreelancers.map(p => (
+                                        <li key={p.id} className="ads-list-item">
+                                            <img src={p.imageBase64 || 'https://via.placeholder.com/80'} alt={p.name} />
+                                            <div className="ad-info"><h4>{p.name}</h4><p>Skill: {p.title} | Price: ₹{p.price}</p></div>
+                                            <div className="ad-actions">
+                                                <button className="btn-approve" onClick={() => handleUpdateStatus('freelanceProfiles', p.id, 'active', p)}>Approve</button>
+                                                <button className="btn-reject" onClick={() => handleUpdateStatus('freelanceProfiles', p.id, 'rejected', p)}>Reject</button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        );
+                    }
+                    case 'kitchenOrders': return (
+                        <div>
+                            <h3>Kitchen Orders</h3>
+                            <ul className="ads-list">
+                                {kitchenOrders.map(order => (
+                                    <li key={order.id} className="ads-list-item">
+                                        <div className="order-details">
+                                            <h4>Order for {order.userName || 'N/A'} ({order.user || 'N/A'})</h4>
+                                            <p>Total: ₹{(order.total || 0).toFixed(2)} | Placed: {order.createdAt ? order.createdAt.toDate().toLocaleString() : 'N/A'}</p>
+                                            <ul className="order-items-list">
+                                                {Array.isArray(order.items) ? order.items.map((item, i) => (
+                                                    <li key={i}>{item.title || 'Unknown Item'} x {item.quantity || 1}</li>
+                                                )) : <li>No items information.</li>}
+                                            </ul>
+                                            {order.paymentProofImage && (
+                                                 <button className="btn-edit" style={{marginTop: '0.5rem'}} onClick={() => onShowProof(order.paymentProofImage)}>
+                                                    View Payment Proof
+                                                 </button>
+                                            )}
+                                        </div>
+                                        <div className="order-actions">
+                                            <span className={`ad-status status-${order.status}`}>{order.status}</span>
+                                            <select className="order-status-select" value={order.status} onChange={e => handleUpdateStatus('kitchenOrders', order.id, e.target.value, order)}>
+                                                {['pending', 'confirmed', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
+                                            </select>
+                                            <a className="btn-whatsapp" href={`https://wa.me/${(order.user || '').replace('+', '')}?text=${getWhatsAppMessage(order)}`} target="_blank" rel="noopener noreferrer">
+                                               <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91s-4.45-9.91-9.91-9.91zM17.18 15.4c-.28-.14-1.65-.81-1.9-.91-.25-.09-.44-.14-.62.14-.18.28-.72.91-.88 1.1-.16.18-.32.21-.59.06-.28-.14-1.17-.43-2.23-1.38-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.13-.13.28-.32.41-.48.14-.16.18-.28.28-.46.09-.18.05-.37-.02-.51s-.62-1.5-.85-2.05c-.22-.55-.45-.48-.62-.48-.16 0-.35-.02-.53-.02s-.47.07-.72.35c-.25.28-.96.93-1.18 2.25-.22 1.32.74 2.6 1.46 3.73.72 1.13 2.35 2.8 5.78 3.6.86.21 1.54.34 2.08.43.79.14 1.5.12 2.07-.07.63-.21 1.65-.68 1.88-1.33.24-.65.24-1.21.16-1.33-.07-.14-.26-.22-.53-.36z"></path></svg>
+                                                <span>WhatsApp</span>
+                                            </a>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>);
+                    case 'kitchenMenu': return <KitchenMenuView items={kitchenItems} handlers={handlers} />;
+                    case 'boosterOffers': return <BoosterOffersView offers={boosterOffers} handlers={{ createOrUpdateDoc, deleteDoc }} />;
+                    case 'ledger': return <LedgerView orders={kitchenOrders} />;
+                    case 'paymentSettings': return <PaymentSettingsView currentSettings={paymentSettings} onSave={createOrUpdateDoc} />;
+                    case 'users': return (
+                        <div>
+                           <h3>Users</h3>
+                           <ul className="ads-list">
+                                {users.map(user => (
+                                    <li key={user.id} className="ads-list-item">
+                                        <div className="ad-info"><h4>{user.name || user.mobile}</h4><p>Contact: {user.mobile || user.id} | Role: {user.role}</p></div>
+                                        <div className="ad-actions"><button className="btn-delete" onClick={() => deleteDoc('users', user.id, 'User deleted.', 'Failed to delete user.')}>Delete</button></div>
+                                    </li>
+                                ))}
+                           </ul>
+                        </div>);
+                    case 'loginActivity': return (
+                        <div>
+                            <h3>Login Activity</h3>
+                            <table className="ledger-table">
+                                <thead><tr><th>Time</th><th>User ID</th></tr></thead>
+                                <tbody>{loginActivities.map(log => <tr key={log.id}><td>{log.loginAt && log.loginAt.toDate().toLocaleString()}</td><td>{log.userId}</td></tr>)}</tbody>
+                            </table>
+                        </div>);
+                    default: return (
+                        <div className="dashboard-page">
+                            <h2>Admin Dashboard</h2>
+                            <div className="dashboard-grid">
+                                {adminServices.map(service => (
+                                    <div key={service.name} className="dashboard-icon-card" onClick={() => setAdminView(service.view)}>
+                                        {service.count > 0 && <span className="item-count-badge">{service.count}</span>}
+                                        <div className="icon-wrapper">{service.icon}</div>
+                                        <p>{service.name}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>);
+                 }
+            };
+            
+            return (
+                <div>
+                    {adminView !== 'dashboard' && (
+                        <>
+                            <button onClick={() => setAdminView('dashboard')} style={{ marginBottom: '1rem' }}>&larr; Back to Dashboard</button>
+                        </>
+                    )}
+                    {renderContent()}
+                </div>
+            );
+        };
+        
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            const root = ReactDOM.createRoot(rootElement);
+            root.render(<AdminApp />);
+        }
+    </script>
+
+<script src="./script.js"></script></body></html>
