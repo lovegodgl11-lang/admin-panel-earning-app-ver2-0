@@ -232,14 +232,13 @@
         .item-count-badge { position: absolute; top: 8px; right: 8px; background-color: var(--danger-color); color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .icon-wrapper { width: 60px; height: 60px; background-color: var(--background-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; margin-left: auto; margin-right: auto;}
         .dashboard-icon-card svg { width: 32px; height: 32px; fill: var(--primary-color); }
-        .dashboard-icon-card p { margin: 0; font-weight: 600; font-size: 0.9rem; }
         
         .order-details { flex-grow: 1; }
         .order-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
         .order-status-select { padding: 0.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1500; }
-        .modal-content { background: var(--card-background); padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 450px; position: relative; }
+        .modal-content { background: var(--card-background); padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 550px; position: relative; max-height: 90vh; overflow-y: auto; }
         .modal-close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--text-color-light); }
         .image-modal-content { padding: 1rem; max-width: 90vw; max-height: 90vh; }
         .image-modal-content img { max-width: 100%; max-height: 80vh; border-radius: var(--border-radius); }
@@ -258,9 +257,14 @@
         .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         .data-table th { background-color: #f8f9fa; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 10; }
         .data-table th:hover { background-color: #e9ecef; }
+        .data-table td .ad-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .data-table td .ad-actions button, .data-table td .ad-actions a { margin-left: 0; }
         .data-table tfoot td { font-weight: bold; background-color: #f8f9fa; border-top: 2px solid var(--border-color); }
         .table-controls { margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
         .table-controls input { padding: 0.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); width: 300px; }
+        .tab-controls { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .tab-button { padding: 0.75rem 1.5rem; border: none; background: none; cursor: pointer; font-size: 1rem; border-bottom: 3px solid transparent; }
+        .tab-button.active { font-weight: bold; color: var(--primary-color); border-bottom-color: var(--primary-color); }
         
         .reports-page h2, .reports-page h3 { text-align: center; color: var(--primary-color); }
         .reports-controls { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
@@ -458,6 +462,65 @@
             );
         };
         
+        const UserEditModal = ({ user, onSave, onCancel }) => {
+            const [formData, setFormData] = useState({ name: '', role: 'user', coins: 0 });
+            const [loading, setLoading] = useState(false);
+
+            useEffect(() => {
+                if (user) {
+                    setFormData({
+                        name: user.name || '',
+                        role: user.role || 'user',
+                        coins: user.coins || 0
+                    });
+                }
+            }, [user]);
+
+            const handleChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: name === 'coins' ? Number(value) : value }));
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                await onSave('users', user.id, formData, 'User updated successfully!', 'Failed to update user.');
+                setLoading(false);
+                onCancel();
+            };
+
+            if (!user) return null;
+
+            return (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <button className="modal-close-btn" onClick={onCancel}>&times;</button>
+                        <h3>Edit User: {user.mobile}</h3>
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label>Name</label>
+                                <input type="text" name="name" value={formData.name} onChange={handleChange} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Role</label>
+                                <select name="role" value={formData.role} onChange={handleChange}>
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Coins</label>
+                                <input type="number" name="coins" value={formData.coins} onChange={handleChange} required />
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" className="btn-cancel" onClick={onCancel}>Cancel</button>
+                                <button type="submit" className="btn-confirm" disabled={loading}>{loading ? 'Saving...' : 'Save Changes'}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
 
         // --- MAIN ADMIN APP ---
         const AdminApp = () => {
@@ -466,6 +529,7 @@
             const [users, setUsers] = useState([]);
             const [kitchenItems, setKitchenItems] = useState([]);
             const [kitchenOrders, setKitchenOrders] = useState([]);
+            const [marketplaceOrders, setMarketplaceOrders] = useState([]);
             const [freelanceProfiles, setFreelanceProfiles] = useState([]);
             const [boosterOffers, setBoosterOffers] = useState([]);
             const [loginActivities, setLoginActivities] = useState([]);
@@ -486,13 +550,13 @@
             useEffect(() => {
                 const collections = {
                     'ads': setAds, 'users': setUsers, 'kitchenItems': setKitchenItems,
-                    'kitchenOrders': setKitchenOrders, 'freelanceProfiles': setFreelanceProfiles,
-                    'boosterOffers': setBoosterOffers, 'login_activity': setLoginActivities
+                    'kitchenOrders': setKitchenOrders, 'marketplaceOrders': setMarketplaceOrders,
+                    'freelanceProfiles': setFreelanceProfiles, 'boosterOffers': setBoosterOffers, 
+                    'login_activity': setLoginActivities
                 };
                 
                 const unsubscribers = Object.entries(collections).map(([name, setter]) => {
                     let query = db.collection(name);
-                    // Add ordering for consistent pagination later if needed
                     if (name === 'login_activity' && query.orderBy) {
                         query = query.orderBy('loginAt', 'desc');
                     } else if (name !== 'users' && query.orderBy) {
@@ -527,7 +591,8 @@
             const pendingAds = useMemo(() => ads.filter(ad => ad.status === 'pending'), [ads]);
             const pendingFreelancers = useMemo(() => freelanceProfiles.filter(p => p.status === 'pending'), [freelanceProfiles]);
             const pendingKitchenOrders = useMemo(() => kitchenOrders.filter(o => o.status === 'pending'), [kitchenOrders]);
-            const totalPendingCount = pendingAds.length + pendingFreelancers.length + pendingKitchenOrders.length;
+            const pendingMarketplaceOrders = useMemo(() => marketplaceOrders.filter(o => o.status === 'pending'), [marketplaceOrders]);
+            const totalPendingCount = pendingAds.length + pendingFreelancers.length + pendingKitchenOrders.length + pendingMarketplaceOrders.length;
 
 
             // --- CUD (Create, Update, Delete) Handlers ---
@@ -565,15 +630,16 @@
                         let link = '';
                         let shouldNotify = false;
 
-                        if (collection === 'freelanceProfiles' && status === 'active') {
-                            message = 'Congratulations! Your freelance profile has been approved.';
+                        if (collection === 'freelanceProfiles' && (status === 'active' || status === 'rejected')) {
+                            message = `Congratulations! Your freelance profile has been ${status}.`;
                             link = 'myFreelanceProfile';
                             shouldNotify = true;
-                        } else if (collection === 'kitchenOrders') {
+                        } else if (collection === 'kitchenOrders' || collection === 'marketplaceOrders') {
                             const orderId = docId.substring(0, 8).toUpperCase();
-                            const statusMessages = {
+                             const statusMessages = {
                                 confirmed: `Your order #${orderId} has been confirmed.`,
                                 preparing: `Your order #${orderId} is being prepared.`,
+                                shipped: `Your order #${orderId} has been shipped.`,
                                 'out-for-delivery': `Your order #${orderId} is out for delivery.`,
                                 delivered: `Your order #${orderId} has been delivered. We hope you enjoy!`,
                                 cancelled: `Unfortunately, your order #${orderId} has been cancelled.`
@@ -621,9 +687,10 @@
                             {showNotifications && (
                                 <div className="notification-dropdown">
                                     <div className="notification-dropdown-header">Pending Items</div>
-                                    {pendingAds.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('ads')}><span>Pending Ads</span> <strong>{pendingAds.length}</strong></div>}
+                                    {pendingMarketplaceOrders.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('marketplaceOrders')}><span>Pending Marketplace Orders</span> <strong>{pendingMarketplaceOrders.length}</strong></div>}
+                                    {pendingKitchenOrders.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('kitchenOrders')}><span>Pending Kitchen Orders</span> <strong>{pendingKitchenOrders.length}</strong></div>}
+                                    {pendingAds.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('adManagement')}><span>Pending Ads</span> <strong>{pendingAds.length}</strong></div>}
                                     {pendingFreelancers.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('freelance')}><span>Pending Freelancers</span> <strong>{pendingFreelancers.length}</strong></div>}
-                                    {pendingKitchenOrders.length > 0 && <div className="notification-dropdown-item" onClick={() => handleNavFromNotification('kitchenOrders')}><span>Pending Orders</span> <strong>{pendingKitchenOrders.length}</strong></div>}
                                     {totalPendingCount === 0 && <div className="notification-dropdown-item"><span>No pending items</span></div>}
                                 </div>
                             )}
@@ -634,28 +701,33 @@
                         <AdminPanel 
                             adminView={adminView}
                             setAdminView={setAdminView}
-                            data={{ ads, users, kitchenItems, kitchenOrders, freelanceProfiles, boosterOffers, loginActivities, paymentSettings }}
+                            data={{ ads, users, kitchenItems, kitchenOrders, marketplaceOrders, freelanceProfiles, boosterOffers, loginActivities, paymentSettings }}
                             handlers={{ handleUpdateStatus, deleteDoc, createOrUpdateDoc, onShowProof: setPaymentProofUrl, showNotification }}
-                            pendingCounts={{ ads: pendingAds.length, freelancers: pendingFreelancers.length, orders: pendingKitchenOrders.length }}
+                            pendingCounts={{ ads: pendingAds.length, freelancers: pendingFreelancers.length, kitchenOrders: pendingKitchenOrders.length, marketplaceOrders: pendingMarketplaceOrders.length }}
                         />
                     </main>
                 </div>
             );
         };
         
-        const ReportsView = ({ orders, users, ads, settings }) => {
+        const ReportsView = ({ kitchenOrders, marketplaceOrders, users, settings }) => {
             const [timeRange, setTimeRange] = useState('all'); // '7d', '30d', 'all'
 
-            const filteredOrders = useMemo(() => {
-                if (timeRange === 'all') return orders.filter(o => o.status === 'delivered');
+            const filterOrdersByTime = (orders) => {
+                 if (timeRange === 'all') return orders.filter(o => o.status === 'delivered');
                 const now = new Date();
                 const days = timeRange === '7d' ? 7 : 30;
                 const cutoff = now.setDate(now.getDate() - days);
                 return orders.filter(o => o.status === 'delivered' && o.createdAt && o.createdAt.toDate() > cutoff);
-            }, [orders, timeRange]);
+            };
 
-            const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.finalTotal || 0), 0);
-            const totalOrders = filteredOrders.length;
+            const filteredKitchenOrders = useMemo(() => filterOrdersByTime(kitchenOrders), [kitchenOrders, timeRange]);
+            const filteredMarketplaceOrders = useMemo(() => filterOrdersByTime(marketplaceOrders), [marketplaceOrders, timeRange]);
+
+            const kitchenRevenue = filteredKitchenOrders.reduce((sum, order) => sum + (order.finalTotal || 0), 0);
+            const marketplaceRevenue = filteredMarketplaceOrders.reduce((sum, order) => sum + (order.finalTotal || 0), 0);
+            const totalRevenue = kitchenRevenue + marketplaceRevenue;
+            const totalOrders = filteredKitchenOrders.length + filteredMarketplaceOrders.length;
             const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
             const totalUsers = users.length;
             const totalCoinsLiability = users.reduce((sum, user) => sum + (user.coins || 0), 0) * (settings?.coinValue || 0.05);
@@ -663,6 +735,8 @@
 
             const kpis = [
                 { title: 'Total Revenue', value: `₹${totalRevenue.toFixed(2)}` },
+                { title: 'Kitchen Revenue', value: `₹${kitchenRevenue.toFixed(2)}` },
+                { title: 'Marketplace Revenue', value: `₹${marketplaceRevenue.toFixed(2)}` },
                 { title: 'Total Orders', value: totalOrders },
                 { title: 'Avg. Order Value', value: `₹${avgOrderValue.toFixed(2)}` },
                 { title: 'Total Users', value: totalUsers },
@@ -842,50 +916,64 @@
         };
         
         const KitchenMenuView = ({ items, handlers }) => {
-            const [name, setName] = useState('');
-            const [price, setPrice] = useState('');
-            const [imageBase64, setImageBase64] = useState(null);
-            const [isAvailable, setIsAvailable] = useState(true);
+            const initialFormState = { name: '', price: '', imageBase64: null, isAvailable: true };
+            const [formData, setFormData] = useState(initialFormState);
+            const [editingItem, setEditingItem] = useState(null);
             const [loading, setLoading] = useState(false);
             
             const { createOrUpdateDoc, deleteDoc, showNotification } = handlers;
+
+            useEffect(() => {
+                if (editingItem) {
+                    setFormData({
+                        name: editingItem.name || '',
+                        price: editingItem.price || '',
+                        imageBase64: editingItem.imageBase64 || null,
+                        isAvailable: editingItem.isAvailable,
+                    });
+                } else {
+                    setFormData(initialFormState);
+                }
+            }, [editingItem]);
+
+            const handleInputChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+            };
 
             const handleFileChange = async (e) => {
                 if (e.target.files && e.target.files[0]) {
                     try {
                         const base64 = await compressImageToBase64(e.target.files[0]);
-                        setImageBase64(base64);
+                        setFormData(prev => ({ ...prev, imageBase64: base64 }));
                     } catch (error) {
-                         if (showNotification) showNotification('Error processing image.', 'error'); else alert('Error processing image.');
+                         showNotification('Error processing image.', 'error');
                     }
                 }
             };
             
             const resetForm = () => {
-                setName('');
-                setPrice('');
-                setImageBase64(null);
-                setIsAvailable(true);
+                setEditingItem(null);
                 const fileInput = document.getElementById('kitchen-item-image-input');
                 if (fileInput) fileInput.value = '';
             };
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
-                if (!name || !price || !imageBase64) {
-                    if (showNotification) showNotification('Please fill all fields and upload an image.', 'error'); else alert('Please fill all fields and upload an image.');
+                if (!formData.name || !formData.price || !formData.imageBase64) {
+                    showNotification('Please fill all fields and upload an image.', 'error');
                     return;
                 }
                 setLoading(true);
                 const data = {
-                    name,
-                    title: name,
-                    price: Number(price),
-                    imageBase64,
-                    isAvailable,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    ...formData,
+                    name: formData.name,
+                    title: formData.name,
+                    price: Number(formData.price),
+                    createdAt: editingItem?.createdAt || firebase.firestore.FieldValue.serverTimestamp()
                 };
-                await createOrUpdateDoc('kitchenItems', null, data, 'Kitchen item added!', 'Failed to add item.');
+                const successMsg = editingItem ? 'Item updated!' : 'Item added!';
+                await createOrUpdateDoc('kitchenItems', editingItem?.id, data, successMsg, 'Failed to save item.');
                 setLoading(false);
                 resetForm();
             };
@@ -898,28 +986,29 @@
                 <div>
                     <h3>Manage Kitchen Menu</h3>
                     <div className="form-container">
-                        <h4>Add New Item</h4>
+                        <h4>{editingItem ? 'Edit Item' : 'Add New Item'}</h4>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
                                 <label>Item Name</label>
-                                <input type="text" value={name} onChange={e => setName(e.target.value)} required />
+                                <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
                             </div>
                             <div className="form-group">
                                 <label>Price (₹)</label>
-                                <input type="number" value={price} onChange={e => setPrice(e.target.value)} required />
+                                <input type="number" name="price" value={formData.price} onChange={handleInputChange} required />
                             </div>
                             <div className="form-group">
                                 <label>Image</label>
-                                <input type="file" id="kitchen-item-image-input" accept="image/*" onChange={handleFileChange} required />
-                                {imageBase64 && <img src={imageBase64} alt="Preview" className="image-preview" />}
+                                <input type="file" id="kitchen-item-image-input" accept="image/*" onChange={handleFileChange} />
+                                {formData.imageBase64 && <img src={formData.imageBase64} alt="Preview" className="image-preview" />}
                             </div>
                             <div className="form-group">
                                 <label style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                                    <input type="checkbox" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} />
+                                    <input type="checkbox" name="isAvailable" checked={formData.isAvailable} onChange={handleInputChange} />
                                     Available for ordering
                                 </label>
                             </div>
-                            <button type="submit" className="btn-approve" disabled={loading}>{loading ? 'Saving...' : 'Add Item'}</button>
+                            <button type="submit" className="btn-approve" disabled={loading}>{loading ? 'Saving...' : (editingItem ? 'Save Changes' : 'Add Item')}</button>
+                            {editingItem && <button type="button" className="btn-cancel" style={{marginLeft: '1rem'}} onClick={resetForm}>Cancel Edit</button>}
                         </form>
                     </div>
 
@@ -931,9 +1020,10 @@
                                     <img src={item.imageBase64 || 'https://via.placeholder.com/80'} alt={item.name} />
                                     <div className="ad-info">
                                         <h4>{item.name}</h4>
-                                        <p>Price: ₹{item.price} | Status: {item.isAvailable ? 'Available' : 'Unavailable'}</p>
+                                        <p>Price: ₹{item.price} | Status: <span style={{color: item.isAvailable ? 'var(--secondary-color)' : 'var(--danger-color)'}}>{item.isAvailable ? 'Available' : 'Unavailable'}</span></p>
                                     </div>
                                     <div className="ad-actions">
+                                        <button className="btn-edit" onClick={() => setEditingItem(item)}>Edit</button>
                                         <button className={item.isAvailable ? 'btn-reject' : 'btn-approve'} onClick={() => handleToggleAvailability(item)}>
                                             {item.isAvailable ? 'Make Unavailable' : 'Make Available'}
                                         </button>
@@ -950,45 +1040,59 @@
         };
         
         const BoosterOffersView = ({ offers, handlers }) => {
-            const [title, setTitle] = useState('');
-            const [description, setDescription] = useState('');
-            const [imageBase64, setImageBase64] = useState(null);
+            const initialFormState = { title: '', description: '', imageBase64: null };
+            const [formData, setFormData] = useState(initialFormState);
+            const [editingOffer, setEditingOffer] = useState(null);
             const [loading, setLoading] = useState(false);
             const { createOrUpdateDoc, deleteDoc, showNotification } = handlers;
+
+            useEffect(() => {
+                if (editingOffer) {
+                    setFormData({
+                        title: editingOffer.title || '',
+                        description: editingOffer.description || '',
+                        imageBase64: editingOffer.imageBase64 || null,
+                    });
+                } else {
+                    setFormData(initialFormState);
+                }
+            }, [editingOffer]);
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+            };
 
             const handleFileChange = async (e) => {
                 if (e.target.files && e.target.files[0]) {
                      try {
                         const base64 = await compressImageToBase64(e.target.files[0]);
-                        setImageBase64(base64);
+                        setFormData(prev => ({ ...prev, imageBase64: base64 }));
                     } catch (error) {
-                        if (showNotification) showNotification('Error processing image.', 'error'); else alert('Error processing image.');
+                        showNotification('Error processing image.', 'error');
                     }
                 }
             };
             
             const resetForm = () => {
-                setTitle('');
-                setDescription('');
-                setImageBase64(null);
+                setEditingOffer(null);
                 const fileInput = document.getElementById('booster-image-input');
                 if(fileInput) fileInput.value = '';
             };
 
-            const handleCreateBooster = async (e) => {
+            const handleSubmit = async (e) => {
                 e.preventDefault();
-                if (!title || !description || !imageBase64) {
-                    if (showNotification) showNotification('Please fill all fields and upload an image.', 'error'); else alert('Please fill all fields and upload an image.');
+                if (!formData.title || !formData.description || !formData.imageBase64) {
+                    showNotification('Please fill all fields and upload an image.', 'error');
                     return;
                 }
                 setLoading(true);
                 const data = {
-                    title,
-                    description,
-                    imageBase64,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    ...formData,
+                    createdAt: editingOffer?.createdAt || firebase.firestore.FieldValue.serverTimestamp()
                 };
-                await createOrUpdateDoc('boosterOffers', null, data, 'Booster offer created!', 'Failed to create offer.');
+                const successMsg = editingOffer ? 'Offer updated!' : 'Offer created!';
+                await createOrUpdateDoc('boosterOffers', editingOffer?.id, data, successMsg, 'Failed to save offer.');
                 setLoading(false);
                 resetForm();
             };
@@ -996,24 +1100,25 @@
             return (
                 <div>
                     <h3>Booster Offers (Flash Offers)</h3>
-                    <form className="form-container" onSubmit={handleCreateBooster}>
-                        <h4>Create New Offer</h4>
+                    <form className="form-container" onSubmit={handleSubmit}>
+                        <h4>{editingOffer ? 'Edit Offer' : 'Create New Offer'}</h4>
                         <div className="form-group">
                             <label>Title</label>
-                            <input type="text" value={title} onChange={e => setTitle(e.target.value)} required />
+                            <input type="text" name="title" value={formData.title} onChange={handleInputChange} required />
                         </div>
                         <div className="form-group">
                             <label>Description</label>
-                            <textarea value={description} onChange={e => setDescription(e.target.value)} required />
+                            <textarea name="description" value={formData.description} onChange={handleInputChange} required />
                         </div>
                         <div className="form-group">
                             <label>Offer Image</label>
-                            <input id="booster-image-input" type="file" accept="image/*" onChange={handleFileChange} required />
-                            {imageBase64 && <img src={imageBase64} alt="Offer Preview" className="image-preview" />}
+                            <input id="booster-image-input" type="file" accept="image/*" onChange={handleFileChange} />
+                            {formData.imageBase64 && <img src={formData.imageBase64} alt="Offer Preview" className="image-preview" />}
                         </div>
                         <button className="btn-approve" type="submit" disabled={loading}>
-                            {loading ? 'Creating...' : 'Create Offer'}
+                            {loading ? 'Saving...' : (editingOffer ? 'Save Changes' : 'Create Offer')}
                         </button>
+                        {editingOffer && <button type="button" className="btn-cancel" style={{marginLeft: '1rem'}} onClick={resetForm}>Cancel Edit</button>}
                     </form>
                     
                     <h4>Existing Offers</h4>
@@ -1027,6 +1132,7 @@
                                         <p>{offer.description}</p>
                                     </div>
                                     <div className="ad-actions">
+                                        <button className="btn-edit" onClick={() => setEditingOffer(offer)}>Edit</button>
                                         <button className="btn-delete" onClick={() => deleteDoc('boosterOffers', offer.id, 'Offer deleted.', 'Failed to delete offer.')}>Delete</button>
                                     </div>
                                 </li>
@@ -1038,25 +1144,212 @@
                 </div>
             );
         };
+        
+        const AdsManagementView = ({ ads, handlers }) => {
+            const [statusFilter, setStatusFilter] = useState('pending');
+            const { handleUpdateStatus, deleteDoc } = handlers;
+            const filteredAds = useMemo(() => ads.filter(ad => ad.status === statusFilter), [ads, statusFilter]);
+
+            return (
+                <div>
+                    <h3>Ad Management</h3>
+                    <div className="tab-controls">
+                        <button className={`tab-button ${statusFilter === 'pending' ? 'active' : ''}`} onClick={() => setStatusFilter('pending')}>Pending</button>
+                        <button className={`tab-button ${statusFilter === 'approved' ? 'active' : ''}`} onClick={() => setStatusFilter('approved')}>Approved</button>
+                        <button className={`tab-button ${statusFilter === 'rejected' ? 'active' : ''}`} onClick={() => setStatusFilter('rejected')}>Rejected</button>
+                    </div>
+                    {filteredAds.length === 0 ? <p>No ads found with status '{statusFilter}'.</p> : (
+                        <ul className="ads-list">
+                            {filteredAds.map(ad => (
+                                <li key={ad.id} className="ads-list-item">
+                                    <img src={ad.imageBase64 || 'https://via.placeholder.com/80'} alt={ad.title} />
+                                    <div className="ad-info"><h4>{ad.title}</h4><p>User: {ad.user} | Price: ₹{ad.price}</p></div>
+                                    <div className="ad-actions">
+                                        {statusFilter === 'pending' && (
+                                            <>
+                                                <button className="btn-approve" onClick={() => handleUpdateStatus('ads', ad.id, 'approved', ad)}>Approve</button>
+                                                <button className="btn-reject" onClick={() => handleUpdateStatus('ads', ad.id, 'rejected', ad)}>Reject</button>
+                                            </>
+                                        )}
+                                        <button className="btn-delete" onClick={() => deleteDoc('ads', ad.id, 'Ad deleted.', 'Failed to delete ad.')}>Delete</button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            );
+        };
+
+        const FreelancerFormModal = ({ profile, onSave, onCancel, showNotification }) => {
+            const [formData, setFormData] = useState({
+                name: '', title: '', price: '', user: '', status: 'pending', imageBase64: null
+            });
+            const [loading, setLoading] = useState(false);
+            const isEditing = !!profile;
+        
+            useEffect(() => {
+                if (isEditing) {
+                    setFormData({
+                        name: profile.name || '',
+                        title: profile.title || '',
+                        price: profile.price || '',
+                        user: profile.user || '',
+                        status: profile.status || 'pending',
+                        imageBase64: profile.imageBase64 || null
+                    });
+                } else {
+                     setFormData({
+                        name: '', title: '', price: '', user: '', status: 'pending', imageBase64: null
+                    });
+                }
+            }, [profile]);
+        
+            const handleChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+            };
+        
+            const handleFileChange = async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    try {
+                        const base64 = await compressImageToBase64(e.target.files[0]);
+                        setFormData(prev => ({ ...prev, imageBase64: base64 }));
+                    } catch (error) {
+                        showNotification('Error processing image.', 'error');
+                    }
+                }
+            };
+        
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!formData.name || !formData.title || !formData.price || !formData.user || !formData.imageBase64) {
+                    showNotification('Please fill all fields and provide an image.', 'error');
+                    return;
+                }
+                if (!formData.user.startsWith('+91') || formData.user.length !== 13) {
+                    showNotification('User mobile number must be in +91XXXXXXXXXX format.', 'error');
+                    return;
+                }
+                setLoading(true);
+                const dataToSave = { 
+                    ...formData, 
+                    createdAt: profile?.createdAt || firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await onSave('freelanceProfiles', profile?.id, dataToSave, 'Profile saved!', 'Failed to save profile.');
+                setLoading(false);
+                onCancel();
+            };
+        
+            return (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <button className="modal-close-btn" onClick={onCancel}>&times;</button>
+                        <h3>{isEditing ? 'Edit' : 'Add'} Freelancer Profile</h3>
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group"><label>Full Name</label><input type="text" name="name" value={formData.name} onChange={handleChange} required /></div>
+                            <div className="form-group"><label>Service Title</label><input type="text" name="title" value={formData.title} onChange={handleChange} required /></div>
+                            <div className="form-group"><label>Rate (e.g., ₹500/hour)</label><input type="text" name="price" value={formData.price} onChange={handleChange} required /></div>
+                            <div className="form-group"><label>User Mobile (+91...)</label><input type="text" name="user" value={formData.user} onChange={handleChange} required disabled={isEditing} placeholder="+911234567890" /></div>
+                            <div className="form-group"><label>Status</label><select name="status" value={formData.status} onChange={handleChange}>
+                                <option value="pending">Pending</option>
+                                <option value="active">Active</option>
+                                <option value="rejected">Rejected</option>
+                            </select></div>
+                            <div className="form-group"><label>Image</label><input type="file" accept="image/*" onChange={handleFileChange} />
+                                {formData.imageBase64 && <img src={formData.imageBase64} alt="Preview" className="image-preview" />}
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" className="btn-cancel" onClick={onCancel}>Cancel</button>
+                                <button type="submit" className="btn-confirm" disabled={loading}>{loading ? 'Saving...' : 'Save Profile'}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+        
+        const FreelancersManagementView = ({ freelanceProfiles, handlers }) => {
+            const [statusFilter, setStatusFilter] = useState('pending');
+            const [editingProfile, setEditingProfile] = useState(null);
+            const [showAddModal, setShowAddModal] = useState(false);
+            const { handleUpdateStatus, deleteDoc, createOrUpdateDoc, showNotification } = handlers;
+        
+            const columns = [
+                { key: 'image', header: 'Image', render: (item) => <img src={item.imageBase64 || 'https://via.placeholder.com/80'} alt={item.name} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} /> },
+                { key: 'name', header: 'Name' },
+                { key: 'title', header: 'Service' },
+                { key: 'price', header: 'Rate' },
+                { key: 'user', header: 'User' },
+                { key: 'status', header: 'Status', render: (item) => <span className={`ad-status status-${item.status}`}>{item.status}</span> },
+                { key: 'actions', header: 'Actions', render: (item) => (
+                    <div className="ad-actions">
+                        {item.status === 'pending' && (
+                            <>
+                                <button className="btn-approve" onClick={() => handleUpdateStatus('freelanceProfiles', item.id, 'active', item)}>Approve</button>
+                                <button className="btn-reject" onClick={() => handleUpdateStatus('freelanceProfiles', item.id, 'rejected', item)}>Reject</button>
+                            </>
+                        )}
+                        {item.status === 'rejected' && <button className="btn-approve" onClick={() => handleUpdateStatus('freelanceProfiles', item.id, 'active', item)}>Activate</button>}
+                        {item.status === 'active' && <button className="btn-reject" onClick={() => handleUpdateStatus('freelanceProfiles', item.id, 'rejected', item)}>Deactivate</button>}
+                        <button className="btn-edit" onClick={() => setEditingProfile(item)}>Edit</button>
+                        <button className="btn-delete" onClick={() => deleteDoc('freelanceProfiles', item.id, 'Profile deleted.', 'Failed to delete.')}>Delete</button>
+                    </div>
+                ) },
+            ];
+        
+            const filteredProfiles = useMemo(() => freelanceProfiles.filter(p => p.status === statusFilter), [freelanceProfiles, statusFilter]);
+        
+            return (
+                <div>
+                    {(editingProfile || showAddModal) && 
+                        <FreelancerFormModal 
+                            profile={editingProfile} 
+                            onSave={createOrUpdateDoc}
+                            onCancel={() => { setEditingProfile(null); setShowAddModal(false); }}
+                            showNotification={showNotification}
+                        />
+                    }
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3>Freelancer Management</h3>
+                        <button className="btn-approve" onClick={() => setShowAddModal(true)}>+ Add New Freelancer</button>
+                    </div>
+                    <div className="tab-controls">
+                        <button className={`tab-button ${statusFilter === 'pending' ? 'active' : ''}`} onClick={() => setStatusFilter('pending')}>Pending</button>
+                        <button className={`tab-button ${statusFilter === 'active' ? 'active' : ''}`} onClick={() => setStatusFilter('active')}>Active</button>
+                        <button className={`tab-button ${statusFilter === 'rejected' ? 'active' : ''}`} onClick={() => setStatusFilter('rejected')}>Rejected</button>
+                    </div>
+                    <SortableTableView
+                        title={`Showing ${statusFilter} profiles`}
+                        columns={columns}
+                        data={filteredProfiles}
+                    />
+                </div>
+            );
+        };
+        
 
         const AdminPanel = ({ adminView, setAdminView, data, handlers, pendingCounts }) => {
-            const { ads, users, kitchenItems, kitchenOrders, freelanceProfiles, boosterOffers, loginActivities, paymentSettings } = data;
-            const { handleUpdateStatus, deleteDoc, createOrUpdateDoc, onShowProof } = handlers;
+            const { ads, users, kitchenItems, kitchenOrders, marketplaceOrders, freelanceProfiles, boosterOffers, loginActivities, paymentSettings } = data;
+            const { handleUpdateStatus, deleteDoc, createOrUpdateDoc, onShowProof, showNotification } = handlers;
+            const [editingUser, setEditingUser] = useState(null);
 
             const adminServices = [
                 { name: 'Reports & Analytics', view: 'reports', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"></path></svg> },
-                { name: 'Pending Ads', view: 'ads', count: pendingCounts.ads, icon: <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"></path></svg> },
-                { name: 'Pending Freelancers', view: 'freelance', count: pendingCounts.freelancers, icon: <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg> },
-                { name: 'Kitchen Orders', view: 'kitchenOrders', count: pendingCounts.orders, icon: <svg viewBox="0 0 24 24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"></path></svg> },
-                { name: 'Ghar Ki Kitchen', view: 'kitchenMenu', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M16 6v8h3v8h2V2c-2.76 0-5 2.24-5 4zm-5 3H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7z"></path></svg> },
+                { name: 'Marketplace Orders', view: 'marketplaceOrders', count: pendingCounts.marketplaceOrders, icon: <svg viewBox="0 0 24 24"><path d="M12 2L1 9l4 12h14l4-12L12 2zm0 4.34L17.66 9h-11.32L12 6.34zM6 19v-8h12v8H6z"></path></svg>},
+                { name: 'Kitchen Orders', view: 'kitchenOrders', count: pendingCounts.kitchenOrders, icon: <svg viewBox="0 0 24 24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"></path></svg> },
+                { name: 'Marketplace Ledger', view: 'marketplaceLedger', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v14.5c0 1.38 1.12 2.5 2.5 2.5h13c1.38 0 2.5-1.12 2.5-2.5V2l-1.5 1.5zM19 18H7V5h12v13z M9 7h8v2H9z m0 4h8v2H9z m0 4h5v2H9z"></path></svg> },
+                { name: 'Kitchen Ledger', view: 'kitchenLedger', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v14.5c0 1.38 1.12 2.5 2.5 2.5h13c1.38 0 2.5-1.12 2.5-2.5V2l-1.5 1.5zM19 18H7V5h12v13z M9 7h8v2H9z m0 4h8v2H9z m0 4h5v2H9z"></path></svg> },
+                { name: 'Ad Management', view: 'adManagement', count: pendingCounts.ads, icon: <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"></path></svg> },
+                { name: 'Freelancers', view: 'freelance', count: pendingCounts.freelancers, icon: <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg> },
+                { name: 'Ghar Ki Kitchen Menu', view: 'kitchenMenu', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M16 6v8h3v8h2V2c-2.76 0-5 2.24-5 4zm-5 3H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7z"></path></svg> },
                 { name: 'Booster Offers', view: 'boosterOffers', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"></path></svg> },
-                { name: 'Payment Ledger', view: 'ledger', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v14.5c0 1.38 1.12 2.5 2.5 2.5h13c1.38 0 2.5-1.12 2.5-2.5V2l-1.5 1.5zM19 18H7V5h12v13z M9 7h8v2H9z m0 4h8v2H9z m0 4h5v2H9z"></path></svg> },
                 { name: 'Payment & Loyalty', view: 'paymentSettings', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"></path></svg> },
                 { name: 'User Management', view: 'users', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"></path></svg> },
                 { name: 'Login Activity', view: 'loginActivity', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"></path></svg> },
             ];
             
-            const getWhatsAppMessage = (order) => {
+            const getWhatsAppMessage = (order, type = 'kitchen') => {
                 if (!order) return '';
                 try {
                     const orderId = (order.id || 'N/A').substring(0, 8).toUpperCase();
@@ -1064,30 +1357,27 @@
                     const total = (order.finalTotal || 0).toFixed(2);
                     const status = order.status || 'pending';
                     let message;
+                    
+                    const kitchenMessages = {
+                        pending: `Hi ${userName}, we've received your Navrose order #${orderId} and are verifying your payment. We will confirm it shortly. Thank you!`,
+                        confirmed: `Hi ${userName}, your Navrose order #${orderId} for ₹${total} has been confirmed and is now being prepared.`,
+                        preparing: `Hi ${userName}, your order #${orderId} is being prepared with care in our kitchen.`,
+                        'out-for-delivery': `Hi ${userName}, great news! Your Navrose order #${orderId} is out for delivery.`,
+                        delivered: `Hi ${userName}, we hope you're enjoying your meal from order #${orderId}. Thank you for choosing Navrose!`,
+                        cancelled: `Hi ${userName}, regarding your order #${orderId}. We're sorry, but it has been cancelled. Please contact us for details.`,
+                    };
 
-                    switch (status) {
-                        case 'pending':
-                            message = `Hi ${userName}, we've received your Navrose order #${orderId} and are verifying your payment. We will confirm it shortly. Thank you!`;
-                            break;
-                        case 'confirmed':
-                            message = `Hi ${userName}, your Navrose order #${orderId} for ₹${total} has been confirmed and is now being prepared.`;
-                            break;
-                        case 'preparing':
-                            message = `Hi ${userName}, your order #${orderId} is being prepared with care in our kitchen.`;
-                            break;
-                        case 'out-for-delivery':
-                            message = `Hi ${userName}, great news! Your Navrose order #${orderId} is out for delivery.`;
-                            break;
-                        case 'delivered':
-                            message = `Hi ${userName}, we hope you're enjoying your meal from order #${orderId}. Thank you for choosing Navrose!`;
-                            break;
-                        case 'cancelled':
-                            message = `Hi ${userName}, regarding your order #${orderId}. We're sorry, but it has been cancelled. Please contact us for details.`;
-                            break;
-                        default:
-                            message = `Hi ${userName}, regarding your Navrose order #${orderId}.`;
-                            break;
-                    }
+                    const marketplaceMessages = {
+                        pending: `Hi ${userName}, we've received your Navrose order #${orderId} and are verifying your payment. We will confirm it shortly. Thank you!`,
+                        confirmed: `Hi ${userName}, your Navrose order #${orderId} for ₹${total} has been confirmed and will be shipped soon.`,
+                        shipped: `Hi ${userName}, great news! Your Navrose order #${orderId} has been shipped.`,
+                        delivered: `Hi ${userName}, your order #${orderId} has been delivered. We hope you enjoy your products!`,
+                        cancelled: `Hi ${userName}, regarding your order #${orderId}. We're sorry, but it has been cancelled. Please contact us for details.`,
+                    };
+
+                    const messages = type === 'kitchen' ? kitchenMessages : marketplaceMessages;
+                    message = messages[status] || `Hi ${userName}, regarding your Navrose order #${orderId}.`;
+
                     return encodeURIComponent(message);
                 } catch (error) {
                     console.error("Error generating WhatsApp message for order:", order.id, error);
@@ -1097,53 +1387,24 @@
 
             const renderContent = () => {
                  switch (adminView) {
-                    case 'reports': return <ReportsView orders={kitchenOrders} users={users} ads={ads} settings={paymentSettings} />;
-                    case 'ads': {
-                        const pendingAds = ads.filter(ad => ad.status === 'pending');
+                    case 'reports': return <ReportsView kitchenOrders={kitchenOrders} marketplaceOrders={marketplaceOrders} users={users} settings={paymentSettings} />;
+                    case 'adManagement': return <AdsManagementView ads={ads} handlers={handlers} />;
+                    case 'freelance': return <FreelancersManagementView freelanceProfiles={freelanceProfiles} handlers={handlers} />;
+                    case 'kitchenOrders': 
+                    case 'marketplaceOrders': {
+                        const isKitchen = adminView === 'kitchenOrders';
+                        const orders = isKitchen ? kitchenOrders : marketplaceOrders;
+                        const title = isKitchen ? 'Kitchen Orders' : 'Marketplace Orders';
+                        const orderType = isKitchen ? 'kitchen' : 'marketplace';
+                        const statusOptions = isKitchen 
+                            ? ['pending', 'confirmed', 'preparing', 'out-for-delivery', 'delivered', 'cancelled']
+                            : ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+                        
                         return (
-                            <div>
-                                <h3>Ads Awaiting Approval</h3>
-                                <ul className="ads-list">
-                                    {pendingAds.map(ad => (
-                                        <li key={ad.id} className="ads-list-item">
-                                            <img src={ad.imageBase64 || 'https://via.placeholder.com/80'} alt={ad.title} />
-                                            <div className="ad-info"><h4>{ad.title}</h4><p>User: {ad.user} | Price: ₹{ad.price}</p></div>
-                                            <div className="ad-actions">
-                                                <button className="btn-approve" onClick={() => handleUpdateStatus('ads', ad.id, 'approved', ad)}>Approve</button>
-                                                <button className="btn-reject" onClick={() => handleUpdateStatus('ads', ad.id, 'rejected', ad)}>Reject</button>
-                                                <button className="btn-delete" onClick={() => deleteDoc('ads', ad.id, 'Ad deleted.', 'Failed to delete ad.')}>Delete</button>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        );
-                    }
-                    case 'freelance': {
-                        const pendingFreelancers = freelanceProfiles.filter(p => p.status === 'pending');
-                        return (
-                            <div>
-                                <h3>Freelancers Awaiting Approval</h3>
-                                <ul className="ads-list">
-                                    {pendingFreelancers.map(p => (
-                                        <li key={p.id} className="ads-list-item">
-                                            <img src={p.imageBase64 || 'https://via.placeholder.com/80'} alt={p.name} />
-                                            <div className="ad-info"><h4>{p.name}</h4><p>Skill: {p.title} | Price: ₹{p.price}</p></div>
-                                            <div className="ad-actions">
-                                                <button className="btn-approve" onClick={() => handleUpdateStatus('freelanceProfiles', p.id, 'active', p)}>Approve</button>
-                                                <button className="btn-reject" onClick={() => handleUpdateStatus('freelanceProfiles', p.id, 'rejected', p)}>Reject</button>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        );
-                    }
-                    case 'kitchenOrders': return (
                         <div>
-                            <h3>Kitchen Orders</h3>
+                            <h3>{title}</h3>
                             <ul className="ads-list">
-                                {kitchenOrders.map(order => (
+                                {orders.map(order => (
                                     <li key={order.id} className="ads-list-item">
                                         <div className="order-details">
                                             <h4>Order for {order.userName || 'N/A'} ({order.user || 'N/A'})</h4>
@@ -1166,21 +1427,23 @@
                                         </div>
                                         <div className="order-actions">
                                             <span className={`ad-status status-${order.status}`}>{order.status}</span>
-                                            <select className="order-status-select" value={order.status} onChange={e => handleUpdateStatus('kitchenOrders', order.id, e.target.value, order)}>
-                                                {['pending', 'confirmed', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
+                                            <select className="order-status-select" value={order.status} onChange={e => handleUpdateStatus(isKitchen ? 'kitchenOrders' : 'marketplaceOrders', order.id, e.target.value, order)}>
+                                                {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
                                             </select>
-                                            <a className="btn-whatsapp" href={`https://wa.me/${(order.user || '').replace('+', '')}?text=${getWhatsAppMessage(order)}`} target="_blank" rel="noopener noreferrer">
+                                            <a className="btn-whatsapp" href={`https://wa.me/${(order.user || '').replace('+', '')}?text=${getWhatsAppMessage(order, orderType)}`} target="_blank" rel="noopener noreferrer">
                                                <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91s-4.45-9.91-9.91-9.91zM17.18 15.4c-.28-.14-1.65-.81-1.9-.91-.25-.09-.44-.14-.62.14-.18.28-.72.91-.88 1.1-.16.18-.32.21-.59.06-.28-.14-1.17-.43-2.23-1.38-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.13-.13.28-.32.41-.48.14-.16.18-.28.28-.46.09-.18.05-.37-.02-.51s-.62-1.5-.85-2.05c-.22-.55-.45-.48-.62-.48-.16 0-.35-.02-.53-.02s-.47.07-.72.35c-.25.28-.96.93-1.18 2.25-.22 1.32.74 2.6 1.46 3.73.72 1.13 2.35 2.8 5.78 3.6.86.21 1.54.34 2.08.43.79.14 1.5.12 2.07-.07.63-.21 1.65-.68 1.88-1.33.24-.65.24-1.21.16-1.33-.07-.14-.26-.22-.53-.36z"></path></svg>
                                                 <span>WhatsApp</span>
                                             </a>
+                                            <button className="btn-delete" onClick={() => deleteDoc(isKitchen ? 'kitchenOrders' : 'marketplaceOrders', order.id, 'Order deleted.', 'Failed to delete order.')}>Delete</button>
                                         </div>
                                     </li>
                                 ))}
                             </ul>
                         </div>);
+                    }
                     case 'kitchenMenu': return <KitchenMenuView items={kitchenItems} handlers={handlers} />;
                     case 'boosterOffers': return <BoosterOffersView offers={boosterOffers} handlers={handlers} />;
-                    case 'ledger': {
+                    case 'kitchenLedger': {
                         const columns = [
                             { key: 'createdAt', header: 'Date', formatter: (ts) => ts ? ts.toDate().toLocaleDateString() : 'N/A' },
                             { key: 'userName', header: 'User' },
@@ -1190,9 +1453,23 @@
                         ];
                         const footerData = (filteredData) => ({
                             user: 'Grand Total:',
-                            finalTotal: `₹${filteredData.reduce((sum, item) => sum + (item.finalTotal || 0), 0).toFixed(2)}`
+                            finalTotal: `₹${filteredData.filter(item => item.status !== 'cancelled').reduce((sum, item) => sum + (item.finalTotal || 0), 0).toFixed(2)}`
                         });
-                        return <SortableTableView title="Payment Ledger (Kitchen Orders)" columns={columns} data={kitchenOrders} footerData={footerData} />;
+                        return <SortableTableView title="Kitchen Payment Ledger" columns={columns} data={kitchenOrders} footerData={footerData} />;
+                    }
+                     case 'marketplaceLedger': {
+                        const columns = [
+                            { key: 'createdAt', header: 'Date', formatter: (ts) => ts ? ts.toDate().toLocaleDateString() : 'N/A' },
+                            { key: 'userName', header: 'User' },
+                            { key: 'user', header: 'Contact' },
+                            { key: 'finalTotal', header: 'Amount (₹)', isNumeric: true, formatter: (val) => (val || 0).toFixed(2) },
+                            { key: 'status', header: 'Status', render: (item) => <span className={`ad-status status-${item.status}`}>{item.status}</span> },
+                        ];
+                         const footerData = (filteredData) => ({
+                            user: 'Grand Total:',
+                            finalTotal: `₹${filteredData.filter(item => item.status !== 'cancelled').reduce((sum, item) => sum + (item.finalTotal || 0), 0).toFixed(2)}`
+                        });
+                        return <SortableTableView title="Marketplace Payment Ledger" columns={columns} data={marketplaceOrders} footerData={footerData} />;
                     }
                     case 'paymentSettings': return <PaymentSettingsView currentSettings={paymentSettings} kitchenItems={kitchenItems} onSave={createOrUpdateDoc} />;
                     case 'users': {
@@ -1201,7 +1478,12 @@
                             { key: 'mobile', header: 'Contact' },
                             { key: 'role', header: 'Role' },
                             { key: 'coins', header: 'Coins', isNumeric: true },
-                            { key: 'actions', header: 'Actions', render: (item) => <button className="btn-delete" onClick={() => deleteDoc('users', item.id, 'User deleted.', 'Failed to delete user.')}>Delete</button> }
+                            { key: 'actions', header: 'Actions', render: (item) => (
+                                <div className="ad-actions">
+                                    <button className="btn-edit" onClick={() => setEditingUser(item)}>Edit</button>
+                                    <button className="btn-delete" onClick={() => deleteDoc('users', item.id, 'User deleted.', 'Failed to delete user.')}>Delete</button>
+                                </div>
+                            ) }
                         ];
                          const footerData = (filteredData) => ({
                             name: `Total Users: ${filteredData.length}`,
@@ -1234,6 +1516,7 @@
             
             return (
                 <div>
+                    {editingUser && <UserEditModal user={editingUser} onSave={createOrUpdateDoc} onCancel={() => setEditingUser(null)} />}
                     {adminView !== 'dashboard' && (
                         <>
                             <button onClick={() => setAdminView('dashboard')} style={{ marginBottom: '1rem' }}>&larr; Back to Dashboard</button>
