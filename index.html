@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" class=""><head><script>window.livecodes = window.livecodes || {};</script><title>Admin earning app ver2.0</title><meta name="title" content="Admin earning app ver2.0"><meta name="description" content="Admin panel "><meta charset="UTF-8">
+<html lang="en" class=""><head><script>window.livecodes = window.livecodes || {};</script><title>Untitled Project</title><meta name="title" content="Untitled Project"><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="./style.css"><script src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js" async=""></script><script type="importmap">{
   "imports": {}
 }</script></head><body>
+
+<script>window.livecodes = window.livecodes || {};</script><title>Admin earning app ver2.0</title><meta name="title" content="Admin earning app ver2.0"><meta name="description" content="Admin panel "><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><style id="__livecodes_styles__"></style><script src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js" async=""></script>
 
 
     <meta charset="UTF-8">
@@ -250,11 +253,23 @@
         .notification.success { background-color: var(--secondary-color); }
         .notification.error { background-color: var(--danger-color); }
         
-        .ledger-table { width: 100%; border-collapse: collapse; background-color: var(--card-background); box-shadow: var(--box-shadow); border-radius: var(--border-radius); overflow: hidden; }
-        .ledger-table th, .ledger-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .ledger-table th { background-color: #f8f9fa; cursor: pointer; user-select: none; }
-        .ledger-table th:hover { background-color: #e9ecef; }
+        .table-container { max-height: 60vh; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--border-radius); }
+        .data-table { width: 100%; border-collapse: collapse; background-color: var(--card-background); }
+        .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .data-table th { background-color: #f8f9fa; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 10; }
+        .data-table th:hover { background-color: #e9ecef; }
+        .data-table tfoot td { font-weight: bold; background-color: #f8f9fa; border-top: 2px solid var(--border-color); }
+        .table-controls { margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .table-controls input { padding: 0.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); width: 300px; }
         
+        .reports-page h2, .reports-page h3 { text-align: center; color: var(--primary-color); }
+        .reports-controls { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .kpi-card { background-color: var(--card-background); padding: 1.5rem; border-radius: var(--border-radius); text-align: center; box-shadow: var(--box-shadow); }
+        .kpi-card h4 { margin: 0 0 0.5rem; color: var(--text-color-light); }
+        .kpi-card p { margin: 0; font-size: 2rem; font-weight: bold; color: var(--primary-color); }
+        .balance-sheet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+
         .loading-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .spinner { border: 5px solid rgba(0, 47, 52, 0.1); width: 50px; height: 50px; border-radius: 50%; border-left-color: var(--primary-color); animation: spin 1s ease infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -348,6 +363,102 @@
             );
         };
         
+        // --- ADVANCED TABLE COMPONENT ---
+        const SortableTableView = ({ title, columns, data, footerData }) => {
+            const [filter, setFilter] = useState('');
+            const [sortConfig, setSortConfig] = useState({ key: columns[0].key, direction: 'descending' });
+
+            const filteredAndSortedData = useMemo(() => {
+                let filteredData = [...data];
+
+                if (filter) {
+                    const lowercasedFilter = filter.toLowerCase();
+                    filteredData = filteredData.filter(item => {
+                        return Object.values(item).some(value =>
+                            String(value).toLowerCase().includes(lowercasedFilter)
+                        );
+                    });
+                }
+                
+                if (sortConfig.key) {
+                    filteredData.sort((a, b) => {
+                        let aValue = a[sortConfig.key];
+                        let bValue = b[sortConfig.key];
+
+                        if (aValue?.toDate && typeof aValue.toDate === 'function') aValue = aValue.toDate();
+                        if (bValue?.toDate && typeof bValue.toDate === 'function') bValue = bValue.toDate();
+                        
+                        if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+                        if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+                        return 0;
+                    });
+                }
+
+                return filteredData;
+            }, [data, filter, sortConfig]);
+            
+            const requestSort = (key) => {
+                let direction = 'ascending';
+                if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+                    direction = 'descending';
+                }
+                setSortConfig({ key, direction });
+            };
+
+            const computedFooterData = footerData ? footerData(filteredAndSortedData) : null;
+
+            return (
+                <div>
+                    <h3>{title}</h3>
+                    <div className="table-controls">
+                        <input
+                            type="text"
+                            placeholder={`Search ${title}...`}
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                        />
+                         <span>Showing {filteredAndSortedData.length} of {data.length} entries</span>
+                    </div>
+                    <div className="table-container">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    {columns.map(col => (
+                                        <th key={col.key} onClick={() => requestSort(col.key)}>
+                                            {col.header} {sortConfig.key === col.key ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredAndSortedData.map((item, index) => (
+                                    <tr key={item.id || index}>
+                                        {columns.map(col => (
+                                            <td key={col.key} style={col.isNumeric ? { textAlign: 'right' } : {}}>
+                                                {col.render ? col.render(item) : (col.formatter ? col.formatter(item[col.key]) : item[col.key])}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                            {computedFooterData && (
+                                <tfoot>
+                                    <tr>
+                                        {columns.map(col => (
+                                            <td key={col.key} style={col.isNumeric ? { textAlign: 'right' } : {}}>
+                                                {computedFooterData[col.key] || ''}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                </tfoot>
+                            )}
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+        
+
         // --- MAIN ADMIN APP ---
         const AdminApp = () => {
             const [adminView, setAdminView] = useState('dashboard');
@@ -381,11 +492,12 @@
                 
                 const unsubscribers = Object.entries(collections).map(([name, setter]) => {
                     let query = db.collection(name);
-                    if (name !== 'users') { 
-                        const timestampField = (name === 'login_activity') ? 'loginAt' : 'createdAt';
-                        query = query.orderBy(timestampField, 'desc');
+                    // Add ordering for consistent pagination later if needed
+                    if (name === 'login_activity' && query.orderBy) {
+                        query = query.orderBy('loginAt', 'desc');
+                    } else if (name !== 'users' && query.orderBy) {
+                        query = query.orderBy('createdAt', 'desc');
                     }
-                    if (['ads', 'kitchenOrders', 'login_activity'].includes(name)) query = query.limit(50);
                     return query.onSnapshot(
                         snap => setter(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
                         err => console.error(`Error fetching ${name}:`, err)
@@ -523,7 +635,7 @@
                             adminView={adminView}
                             setAdminView={setAdminView}
                             data={{ ads, users, kitchenItems, kitchenOrders, freelanceProfiles, boosterOffers, loginActivities, paymentSettings }}
-                            handlers={{ handleUpdateStatus, deleteDoc, createOrUpdateDoc, onShowProof: setPaymentProofUrl }}
+                            handlers={{ handleUpdateStatus, deleteDoc, createOrUpdateDoc, onShowProof: setPaymentProofUrl, showNotification }}
                             pendingCounts={{ ads: pendingAds.length, freelancers: pendingFreelancers.length, orders: pendingKitchenOrders.length }}
                         />
                     </main>
@@ -531,69 +643,87 @@
             );
         };
         
-        const LedgerView = ({ orders }) => {
-            const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'descending' });
+        const ReportsView = ({ orders, users, ads, settings }) => {
+            const [timeRange, setTimeRange] = useState('all'); // '7d', '30d', 'all'
 
-            const sortedOrders = useMemo(() => {
-                let sortableItems = [...orders];
-                if (sortConfig !== null) {
-                    sortableItems.sort((a, b) => {
-                        let aValue = a[sortConfig.key]; let bValue = b[sortConfig.key];
-                        if (sortConfig.key === 'createdAt' && a.createdAt && b.createdAt) {
-                            aValue = a.createdAt.toMillis(); bValue = b.createdAt.toMillis();
-                        }
-                        if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-                        if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-                        return 0;
-                    });
-                }
-                return sortableItems;
-            }, [orders, sortConfig]);
+            const filteredOrders = useMemo(() => {
+                if (timeRange === 'all') return orders.filter(o => o.status === 'delivered');
+                const now = new Date();
+                const days = timeRange === '7d' ? 7 : 30;
+                const cutoff = now.setDate(now.getDate() - days);
+                return orders.filter(o => o.status === 'delivered' && o.createdAt && o.createdAt.toDate() > cutoff);
+            }, [orders, timeRange]);
 
-            const requestSort = (key) => {
-                let direction = 'ascending';
-                if (sortConfig.key === key && sortConfig.direction === 'ascending') direction = 'descending';
-                setSortConfig({ key, direction });
-            };
+            const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.finalTotal || 0), 0);
+            const totalOrders = filteredOrders.length;
+            const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+            const totalUsers = users.length;
+            const totalCoinsLiability = users.reduce((sum, user) => sum + (user.coins || 0), 0) * (settings?.coinValue || 0.05);
+            const businessEquity = totalRevenue - totalCoinsLiability;
 
+            const kpis = [
+                { title: 'Total Revenue', value: `₹${totalRevenue.toFixed(2)}` },
+                { title: 'Total Orders', value: totalOrders },
+                { title: 'Avg. Order Value', value: `₹${avgOrderValue.toFixed(2)}` },
+                { title: 'Total Users', value: totalUsers },
+            ];
+            
             return (
-                <div>
-                    <h3>Payment Ledger (Kitchen Orders)</h3>
-                    <table className="ledger-table">
-                        <thead>
-                            <tr>
-                                <th onClick={() => requestSort('createdAt')}>Date</th>
-                                <th onClick={() => requestSort('userName')}>User</th>
-                                <th onClick={() => requestSort('user')}>Contact</th>
-                                <th onClick={() => requestSort('total')}>Amount (₹)</th>
-                                <th onClick={() => requestSort('status')}>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedOrders.map(order => (
-                                <tr key={order.id}>
-                                    <td>{order.createdAt && order.createdAt.toDate().toLocaleDateString()}</td>
-                                    <td>{order.userName}</td>
-                                    <td>{order.user}</td>
-                                    <td>{(order.total || 0).toFixed(2)}</td>
-                                    <td><span className={`ad-status status-${order.status}`}>{order.status}</span></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="reports-page">
+                    <h2>Reports & Analytics</h2>
+                    <div className="reports-controls">
+                        <button className={`btn-${timeRange === '7d' ? 'approve' : 'cancel'}`} onClick={() => setTimeRange('7d')}>Last 7 Days</button>
+                        <button className={`btn-${timeRange === '30d' ? 'approve' : 'cancel'}`} onClick={() => setTimeRange('30d')}>Last 30 Days</button>
+                        <button className={`btn-${timeRange === 'all' ? 'approve' : 'cancel'}`} onClick={() => setTimeRange('all')}>All Time</button>
+                    </div>
+                    
+                    <h3>Key Metrics</h3>
+                    <div className="kpi-grid">
+                        {kpis.map(kpi => (
+                            <div key={kpi.title} className="kpi-card">
+                                <h4>{kpi.title}</h4>
+                                <p>{kpi.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <h3>Simplified Balance Sheet</h3>
+                    <div className="balance-sheet-grid kpi-grid">
+                         <div className="kpi-card"><h4>Total Revenue (Assets)</h4><p style={{color: 'var(--secondary-color)'}}>₹{totalRevenue.toFixed(2)}</p></div>
+                         <div className="kpi-card"><h4>Coin Value (Liabilities)</h4><p style={{color: 'var(--danger-color)'}}>- ₹{totalCoinsLiability.toFixed(2)}</p></div>
+                         <div className="kpi-card"><h4>Business Equity</h4><p>₹{businessEquity.toFixed(2)}</p></div>
+                    </div>
                 </div>
             );
         };
         
-        const PaymentSettingsView = ({ currentSettings, onSave }) => {
+        const PaymentSettingsView = ({ currentSettings, kitchenItems, onSave }) => {
             const [upiId, setUpiId] = useState('');
             const [qrCode, setQrCode] = useState(null);
             const [loading, setLoading] = useState(false);
+            const [promoCode, setPromoCode] = useState('');
+            const [promoDiscount, setPromoDiscount] = useState(10);
+            const [promoMinOrder, setPromoMinOrder] = useState(100);
+            const [promoEligibleItemIds, setPromoEligibleItemIds] = useState([]);
+            const [coinsPerOrder, setCoinsPerOrder] = useState(10);
+            const [bonusCoins, setBonusCoins] = useState(1500);
+            const [bonusThreshold, setBonusThreshold] = useState(1000);
+            const [coinValue, setCoinValue] = useState(0.05);
+            const [coinEligibleItemIds, setCoinEligibleItemIds] = useState([]);
 
             useEffect(() => {
                 if (currentSettings) {
                     setUpiId(currentSettings.upiId || '');
                     setQrCode(currentSettings.qrCodeBase64 || null);
+                    setPromoCode(currentSettings.promoCode || 'navrose');
+                    setPromoDiscount(currentSettings.promoDiscount || 10);
+                    setPromoMinOrder(currentSettings.promoMinOrder || 100);
+                    setPromoEligibleItemIds(currentSettings.promoEligibleItemIds || []);
+                    setCoinsPerOrder(currentSettings.coinsPerOrder || 10);
+                    setBonusCoins(currentSettings.bonusCoins || 1500);
+                    setBonusThreshold(currentSettings.bonusThreshold || 1000);
+                    setCoinValue(currentSettings.coinValue || 0.05);
+                    setCoinEligibleItemIds(currentSettings.coinEligibleItemIds || []);
                 }
             }, [currentSettings]);
 
@@ -604,18 +734,51 @@
                 }
             };
 
+            const handlePromoItemToggle = (itemId) => {
+                setPromoEligibleItemIds(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
+            };
+
+            const handleCoinItemToggle = (itemId) => {
+                setCoinEligibleItemIds(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
+            };
+
             const handleSave = async (e) => {
                 e.preventDefault(); setLoading(true);
-                await onSave('settings', 'payment', { upiId, qrCodeBase64: qrCode }, 'Payment settings saved!', 'Failed to save settings.');
+                const settingsData = {
+                    upiId,
+                    qrCodeBase64: qrCode,
+                    promoCode,
+                    promoDiscount: Number(promoDiscount),
+                    promoMinOrder: Number(promoMinOrder),
+                    promoEligibleItemIds,
+                    coinsPerOrder: Number(coinsPerOrder),
+                    bonusCoins: Number(bonusCoins),
+                    bonusThreshold: Number(bonusThreshold),
+                    coinValue: Number(coinValue),
+                    coinEligibleItemIds
+                };
+                await onSave('settings', 'payment', settingsData, 'Settings saved!', 'Failed to save settings.');
                 setLoading(false);
             };
 
-            if (!currentSettings) return <p>Loading payment settings...</p>;
+            if (!currentSettings) return <p>Loading settings...</p>;
+            
+            const itemSelectionListStyle = {
+                maxHeight: '200px',
+                overflowY: 'auto',
+                border: '1px solid var(--border-color)',
+                padding: '1rem',
+                borderRadius: 'var(--border-radius)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+            };
 
             return (
                 <div className="form-container">
-                    <h2>Payment Settings</h2>
+                    <h2>Payment & Loyalty Settings</h2>
                     <form onSubmit={handleSave}>
+                        <h4>UPI Payment Settings</h4>
                         <div className="form-group">
                             <label>UPI ID</label>
                             <input type="text" value={upiId} onChange={e => setUpiId(e.target.value)} required />
@@ -625,6 +788,51 @@
                             <input type="file" accept="image/*" onChange={handleFileChange} />
                             {qrCode && <img src={qrCode} alt="QR Code Preview" className="image-preview" />}
                         </div>
+                        <hr style={{margin: '2rem 0'}} />
+                        <h4>Promo Code Settings</h4>
+                        <div className="form-group"><label>Promo Code</label><input type="text" value={promoCode} onChange={e => setPromoCode(e.target.value)} /></div>
+                        <div className="form-group"><label>Discount Percentage (%)</label><input type="number" value={promoDiscount} onChange={e => setPromoDiscount(e.target.value)} /></div>
+                        <div className="form-group"><label>Minimum Order Value (₹)</label><input type="number" value={promoMinOrder} onChange={e => setPromoMinOrder(e.target.value)} /></div>
+                        
+                        <div className="form-group">
+                            <label>Promo Code Item Eligibility</label>
+                            <p style={{fontSize: '0.9rem', color: 'var(--text-color-light)', margin: '-0.5rem 0 1rem'}}>Select items the promo code applies to. The discount will only be calculated on these items.</p>
+                            <div style={itemSelectionListStyle}>
+                                {kitchenItems.length > 0 ? kitchenItems.map(item => (
+                                    <label key={item.id} style={{fontWeight: 'normal', cursor: 'pointer'}}>
+                                        <input
+                                            type="checkbox"
+                                            checked={promoEligibleItemIds.includes(item.id)}
+                                            onChange={() => handlePromoItemToggle(item.id)}
+                                        /> {item.name} (₹{item.price})
+                                    </label>
+                                )) : <p>No kitchen items found.</p>}
+                            </div>
+                        </div>
+
+                        <hr style={{margin: '2rem 0'}} />
+                        <h4>Coin Loyalty Settings</h4>
+                        <div className="form-group"><label>Coins per Order</label><input type="number" value={coinsPerOrder} onChange={e => setCoinsPerOrder(e.target.value)} /></div>
+                        <div className="form-group"><label>Bonus Coins for Large Orders</label><input type="number" value={bonusCoins} onChange={e => setBonusCoins(e.target.value)} /></div>
+                        <div className="form-group"><label>Bonus Threshold (₹)</label><input type="number" value={bonusThreshold} onChange={e => setBonusThreshold(e.target.value)} /></div>
+                        <div className="form-group"><label>Coin Value (1 Coin = X Rupees)</label><input type="number" step="0.01" value={coinValue} onChange={e => setCoinValue(e.target.value)} /></div>
+                        
+                        <div className="form-group">
+                            <label>Coin Earning Item Eligibility</label>
+                            <p style={{fontSize: '0.9rem', color: 'var(--text-color-light)', margin: '-0.5rem 0 1rem'}}>Select items that are eligible for earning coins on purchase (when no promo is used).</p>
+                             <div style={itemSelectionListStyle}>
+                                {kitchenItems.length > 0 ? kitchenItems.map(item => (
+                                    <label key={item.id} style={{fontWeight: 'normal', cursor: 'pointer'}}>
+                                        <input
+                                            type="checkbox"
+                                            checked={coinEligibleItemIds.includes(item.id)}
+                                            onChange={() => handleCoinItemToggle(item.id)}
+                                        /> {item.name} (₹{item.price})
+                                    </label>
+                                )) : <p>No kitchen items found.</p>}
+                            </div>
+                        </div>
+
                         <div className="form-actions">
                             <button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save Settings'}</button>
                         </div>
@@ -640,12 +848,16 @@
             const [isAvailable, setIsAvailable] = useState(true);
             const [loading, setLoading] = useState(false);
             
-            const { createOrUpdateDoc, deleteDoc } = handlers;
+            const { createOrUpdateDoc, deleteDoc, showNotification } = handlers;
 
             const handleFileChange = async (e) => {
                 if (e.target.files && e.target.files[0]) {
-                    const base64 = await compressImageToBase64(e.target.files[0]);
-                    setImageBase64(base64);
+                    try {
+                        const base64 = await compressImageToBase64(e.target.files[0]);
+                        setImageBase64(base64);
+                    } catch (error) {
+                         if (showNotification) showNotification('Error processing image.', 'error'); else alert('Error processing image.');
+                    }
                 }
             };
             
@@ -661,7 +873,7 @@
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 if (!name || !price || !imageBase64) {
-                    alert('Please fill all fields and upload an image.');
+                    if (showNotification) showNotification('Please fill all fields and upload an image.', 'error'); else alert('Please fill all fields and upload an image.');
                     return;
                 }
                 setLoading(true);
@@ -742,12 +954,16 @@
             const [description, setDescription] = useState('');
             const [imageBase64, setImageBase64] = useState(null);
             const [loading, setLoading] = useState(false);
-            const { createOrUpdateDoc, deleteDoc } = handlers;
+            const { createOrUpdateDoc, deleteDoc, showNotification } = handlers;
 
             const handleFileChange = async (e) => {
                 if (e.target.files && e.target.files[0]) {
-                    const base64 = await compressImageToBase64(e.target.files[0]);
-                    setImageBase64(base64);
+                     try {
+                        const base64 = await compressImageToBase64(e.target.files[0]);
+                        setImageBase64(base64);
+                    } catch (error) {
+                        if (showNotification) showNotification('Error processing image.', 'error'); else alert('Error processing image.');
+                    }
                 }
             };
             
@@ -762,7 +978,7 @@
             const handleCreateBooster = async (e) => {
                 e.preventDefault();
                 if (!title || !description || !imageBase64) {
-                    alert('Please fill all fields and upload an image.');
+                    if (showNotification) showNotification('Please fill all fields and upload an image.', 'error'); else alert('Please fill all fields and upload an image.');
                     return;
                 }
                 setLoading(true);
@@ -828,13 +1044,14 @@
             const { handleUpdateStatus, deleteDoc, createOrUpdateDoc, onShowProof } = handlers;
 
             const adminServices = [
+                { name: 'Reports & Analytics', view: 'reports', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"></path></svg> },
                 { name: 'Pending Ads', view: 'ads', count: pendingCounts.ads, icon: <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"></path></svg> },
                 { name: 'Pending Freelancers', view: 'freelance', count: pendingCounts.freelancers, icon: <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg> },
                 { name: 'Kitchen Orders', view: 'kitchenOrders', count: pendingCounts.orders, icon: <svg viewBox="0 0 24 24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"></path></svg> },
                 { name: 'Ghar Ki Kitchen', view: 'kitchenMenu', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M16 6v8h3v8h2V2c-2.76 0-5 2.24-5 4zm-5 3H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7z"></path></svg> },
                 { name: 'Booster Offers', view: 'boosterOffers', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"></path></svg> },
                 { name: 'Payment Ledger', view: 'ledger', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v14.5c0 1.38 1.12 2.5 2.5 2.5h13c1.38 0 2.5-1.12 2.5-2.5V2l-1.5 1.5zM19 18H7V5h12v13z M9 7h8v2H9z m0 4h8v2H9z m0 4h5v2H9z"></path></svg> },
-                { name: 'Payment Settings', view: 'paymentSettings', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"></path></svg> },
+                { name: 'Payment & Loyalty', view: 'paymentSettings', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"></path></svg> },
                 { name: 'User Management', view: 'users', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"></path></svg> },
                 { name: 'Login Activity', view: 'loginActivity', count: 0, icon: <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"></path></svg> },
             ];
@@ -844,7 +1061,7 @@
                 try {
                     const orderId = (order.id || 'N/A').substring(0, 8).toUpperCase();
                     const userName = order.userName || 'Customer';
-                    const total = (order.total || 0).toFixed(2);
+                    const total = (order.finalTotal || 0).toFixed(2);
                     const status = order.status || 'pending';
                     let message;
 
@@ -880,6 +1097,7 @@
 
             const renderContent = () => {
                  switch (adminView) {
+                    case 'reports': return <ReportsView orders={kitchenOrders} users={users} ads={ads} settings={paymentSettings} />;
                     case 'ads': {
                         const pendingAds = ads.filter(ad => ad.status === 'pending');
                         return (
@@ -929,7 +1147,12 @@
                                     <li key={order.id} className="ads-list-item">
                                         <div className="order-details">
                                             <h4>Order for {order.userName || 'N/A'} ({order.user || 'N/A'})</h4>
-                                            <p>Total: ₹{(order.total || 0).toFixed(2)} | Placed: {order.createdAt ? order.createdAt.toDate().toLocaleString() : 'N/A'}</p>
+                                            <p>Subtotal: ₹{(order.subtotal || 0).toFixed(2)}</p>
+                                            {order.promoDiscount > 0 && <p style={{color: 'green'}}>Promo Discount: - ₹{order.promoDiscount.toFixed(2)} ({order.promoCode})</p>}
+                                            {order.coinDiscount > 0 && <p style={{color: 'green'}}>Coin Discount: - ₹{order.coinDiscount.toFixed(2)} ({order.coinsRedeemed} coins)</p>}
+                                            <p><strong>Final Total: ₹{(order.finalTotal || 0).toFixed(2)}</strong></p>
+                                            <p><small>Placed: {order.createdAt ? order.createdAt.toDate().toLocaleString() : 'N/A'}</small></p>
+
                                             <ul className="order-items-list">
                                                 {Array.isArray(order.items) ? order.items.map((item, i) => (
                                                     <li key={i}>{item.title || 'Unknown Item'} x {item.quantity || 1}</li>
@@ -956,29 +1179,43 @@
                             </ul>
                         </div>);
                     case 'kitchenMenu': return <KitchenMenuView items={kitchenItems} handlers={handlers} />;
-                    case 'boosterOffers': return <BoosterOffersView offers={boosterOffers} handlers={{ createOrUpdateDoc, deleteDoc }} />;
-                    case 'ledger': return <LedgerView orders={kitchenOrders} />;
-                    case 'paymentSettings': return <PaymentSettingsView currentSettings={paymentSettings} onSave={createOrUpdateDoc} />;
-                    case 'users': return (
-                        <div>
-                           <h3>Users</h3>
-                           <ul className="ads-list">
-                                {users.map(user => (
-                                    <li key={user.id} className="ads-list-item">
-                                        <div className="ad-info"><h4>{user.name || user.mobile}</h4><p>Contact: {user.mobile || user.id} | Role: {user.role}</p></div>
-                                        <div className="ad-actions"><button className="btn-delete" onClick={() => deleteDoc('users', user.id, 'User deleted.', 'Failed to delete user.')}>Delete</button></div>
-                                    </li>
-                                ))}
-                           </ul>
-                        </div>);
-                    case 'loginActivity': return (
-                        <div>
-                            <h3>Login Activity</h3>
-                            <table className="ledger-table">
-                                <thead><tr><th>Time</th><th>User ID</th></tr></thead>
-                                <tbody>{loginActivities.map(log => <tr key={log.id}><td>{log.loginAt && log.loginAt.toDate().toLocaleString()}</td><td>{log.userId}</td></tr>)}</tbody>
-                            </table>
-                        </div>);
+                    case 'boosterOffers': return <BoosterOffersView offers={boosterOffers} handlers={handlers} />;
+                    case 'ledger': {
+                        const columns = [
+                            { key: 'createdAt', header: 'Date', formatter: (ts) => ts ? ts.toDate().toLocaleDateString() : 'N/A' },
+                            { key: 'userName', header: 'User' },
+                            { key: 'user', header: 'Contact' },
+                            { key: 'finalTotal', header: 'Amount (₹)', isNumeric: true, formatter: (val) => (val || 0).toFixed(2) },
+                            { key: 'status', header: 'Status', render: (item) => <span className={`ad-status status-${item.status}`}>{item.status}</span> },
+                        ];
+                        const footerData = (filteredData) => ({
+                            user: 'Grand Total:',
+                            finalTotal: `₹${filteredData.reduce((sum, item) => sum + (item.finalTotal || 0), 0).toFixed(2)}`
+                        });
+                        return <SortableTableView title="Payment Ledger (Kitchen Orders)" columns={columns} data={kitchenOrders} footerData={footerData} />;
+                    }
+                    case 'paymentSettings': return <PaymentSettingsView currentSettings={paymentSettings} kitchenItems={kitchenItems} onSave={createOrUpdateDoc} />;
+                    case 'users': {
+                         const columns = [
+                            { key: 'name', header: 'Name' },
+                            { key: 'mobile', header: 'Contact' },
+                            { key: 'role', header: 'Role' },
+                            { key: 'coins', header: 'Coins', isNumeric: true },
+                            { key: 'actions', header: 'Actions', render: (item) => <button className="btn-delete" onClick={() => deleteDoc('users', item.id, 'User deleted.', 'Failed to delete user.')}>Delete</button> }
+                        ];
+                         const footerData = (filteredData) => ({
+                            name: `Total Users: ${filteredData.length}`,
+                            coins: filteredData.reduce((sum, item) => sum + (item.coins || 0), 0)
+                        });
+                        return <SortableTableView title="User Management" columns={columns} data={users} footerData={footerData} />;
+                    }
+                    case 'loginActivity': {
+                         const columns = [
+                            { key: 'loginAt', header: 'Time', formatter: (ts) => ts ? ts.toDate().toLocaleString() : 'N/A' },
+                            { key: 'userId', header: 'User ID' },
+                        ];
+                        return <SortableTableView title="Login Activity" columns={columns} data={loginActivities} />;
+                    }
                     default: return (
                         <div className="dashboard-page">
                             <h2>Admin Dashboard</h2>
@@ -1014,4 +1251,5 @@
         }
     </script>
 
+<script></script>
 <script src="./script.js"></script></body></html>
